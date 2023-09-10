@@ -334,6 +334,13 @@ skia_wasm_lib("canvaskit") {
     ]
   }
 
+  if (skia_canvaskit_enable_pdf) {
+    ldflags += [
+      "--pre-js",
+      rebase_path("pdf.js"),
+    ]
+  }
+
   ldflags += [
     "--pre-js",
     rebase_path("postamble.js"),
@@ -414,5 +421,8 @@ skia_wasm_lib("canvaskit") {
   }
   if (!skia_canvaskit_enable_font) {
     defines += [ "CK_NO_FONTS" ]
+  }
+  if (skia_canvaskit_enable_pdf) {
+    defines += [ "CK_INCLUDE_PDF" ]
   }
 }
