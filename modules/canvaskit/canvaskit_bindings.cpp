@@ -145,6 +145,11 @@ extern "C" const SkEmbeddedResourceHeader SK_EMBEDDED_FONTS;
 #error "This define should not be set, as it brings in test-only things and bloats codesize."
 #endif
 
+#ifdef CK_INCLUDE_PDF
+#include "include/core/SkDocument.h"
+#include "include/docs/SkPDFDocument.h"
+#endif
+
 #if defined(SK_CODEC_DECODES_BMP)
 #include "include/codec/SkBmpDecoder.h"
 #endif
@@ -912,6 +917,15 @@ namespace emscripten {
         void raw_destructor<SkTypeface>(SkTypeface* ptr) {
         }
 #endif
+
+#ifdef CK_INCLUDE_PDF
+        template<>
+        void raw_destructor<SkDocument>(SkDocument* ptr) {
+            if(ptr){
+                ptr->unref();
+            }
+        }
+#endif
     }
 }
 
@@ -1537,6 +1551,30 @@ EMSCRIPTEN_BINDINGS(Skia) {
         }))
         .function("isClosed", &SkContourMeasure::isClosed)
         .function("length", &SkContourMeasure::length);
+
+#ifdef CK_INCLUDE_PDF
+    class_<SkDocument>("Document")
+        .smart_ptr<sk_sp<SkDocument>>("sk_sp<SkDocument>")
+        .function("_beginPage", optional_override([](SkDocument& self, SkScalar width, SkScalar height, WASMPointerF32 fPtr)-> SkCanvas* {
+            const SkRect* rect = reinterpret_cast<const SkRect*>(fPtr);
+            return self.beginPage(width, height, rect);
+        }), allow_raw_pointers())
+        .function("endPage", &SkDocument::endPage)
+        .function("close", &SkDocument::close)
+        .function("abort", &SkDocument::abort);
+ 
+    class_<SkDynamicMemoryWStream>("DynamicMemoryStream")
+        .constructor<>()
+        .function("detachAsBytes",optional_override([](SkDynamicMemoryWStream& self)-> Uint8Array {
+            auto data = self.detachAsData();
+            return toBytes(data);
+        }));
+    
+    function("MakePDFDocument", optional_override([](SkDynamicMemoryWStream* stream)->sk_sp<SkDocument> {
+        return SkPDF::MakeDocument(stream);
+    }), allow_raw_pointers());
+    constant("pdf", true);
+#endif
 
 #ifndef CK_NO_FONTS
     class_<SkFont>("Font")
