@@ -58,6 +58,7 @@ var CanvasKit = {
   MakeGPUCanvasContext: function() {},
   MakeGPUCanvasSurface: function() {},
   MakeGPUTextureSurface: function() {},
+  MakePDFDocument: function() {},
   MakeRasterDirectSurface: function() {},
   MakeWebGLCanvasSurface: function() {},
   Malloc: function() {},
@@ -435,6 +436,17 @@ var CanvasKit = {
       getPosTan: function() {},
     },
     _getPosTan: function() {},
+  },
+
+  Document: {
+    endPage: function() {},
+    close: function() {},
+    abort: function() {},
+    prototype:  {
+      beginPage: function() {},
+    },
+    // private API (from C++ bindings)
+    _beginPage: function() {},
   },
 
   Font: {

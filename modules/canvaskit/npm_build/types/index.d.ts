@@ -459,10 +459,18 @@ export interface CanvasKit {
     MakeManagedAnimation(json: string, assets?: Record<string, ArrayBuffer>,
                          filterPrefix?: string, soundMap?: SoundMap): ManagedSkottieAnimation;
 
+    /**
+     * returns a new PDF document.
+     * @param stream - stream to store content of file.
+     * This function would be available only if compiled with PDF support.
+     */
+    MakePDFDocument(stream:DynamicMemoryStream): SkDocument;
+
     // Constructors, i.e. things made with `new CanvasKit.Foo()`;
     readonly ImageData: ImageDataConstructor;
     readonly ParagraphStyle: ParagraphStyleConstructor;
     readonly ContourMeasureIter: ContourMeasureIterConstructor;
+    readonly DynamicMemoryStream: DynamicMemoryStreamConstructor;
     readonly Font: FontConstructor;
     readonly Paint: DefaultConstructor<Paint>;
     readonly Path: PathConstructorAndFactory;
@@ -555,9 +563,10 @@ export interface CanvasKit {
 
     readonly gpu?: boolean; // true if GPU code was compiled in
     readonly managed_skottie?: boolean; // true if advanced (managed) Skottie code was compiled in
+    readonly pdf?: boolean; // true if PDF support was compiled in
     readonly rt_effect?: boolean; // true if RuntimeEffect was compiled in
     readonly skottie?: boolean; // true if base Skottie code was compiled in
-
+    
     // Paragraph Enums
     readonly Affinity: AffinityEnumValues;
     readonly DecorationStyle: DecorationStyleEnumValues;
@@ -1924,6 +1933,50 @@ export interface FontMetrics {
     descent: number;    // suggested space below the baseline. > 0
     leading: number;    // suggested spacing between descent of previous line and ascent of next line.
     bounds?: Rect;      // smallest rect containing all glyphs (relative to 0,0)
+}
+
+
+
+/**
+ * See SkDocument.h for more on this class.
+ * This class would be available only if compiled with PDF support.
+ * Type name "SkDocument" is chosen to resolve conflict with Document class in DOM.
+ */
+export interface SkDocument extends EmbindObject<"SkDocument"> {
+    /**
+     * Closes the document and frees any resources associated with it.
+     * This must be called before the document is destroyed.
+     * */
+    close(): void;
+    /**
+     * Begins a new Page and returns the canvas associated with this document.
+     * @param width
+     * @param height
+     * @param contentRect - the content rectangle of the page. If provided, the page will be
+     *                     clipped to this rectangle.
+     * @returns the canvas associated with this document.
+     * */
+    beginPage(width: number, height: number, contentRect?:Rect): Canvas;
+    /**
+     * Ends the current page.
+     * */
+    endPage(): void;
+    /**
+     * Aborts the document creation.
+     */
+    abort(): void;
+}
+
+/**
+ * See SkDynamicMemoryWStream.h for more on this class.
+ * This class would be available only if compiled with PDF support.
+ */
+export interface DynamicMemoryStream extends EmbindObject<"DynamicMemoryStream"> {
+    /**
+     * Return the contents as bytes, and then reset the stream.
+     * @returns the contents as bytes.
+     * */
+    detachAsBytes(): Uint8Array;
 }
 
 /**
@@ -3664,6 +3717,16 @@ export interface ContourMeasureIterConstructor {
      *                   precision (and possibly slow down the computation).
      */
     new (path: Path, forceClosed: boolean, resScale: number): ContourMeasureIter;
+}
+
+/**
+ * See DynamicMemoryWStream.h
+ */
+export interface DynamicMemoryStreamConstructor {
+    /**
+     * Creates a new DynamicMemoryStream.
+     */
+    new(): DynamicMemoryStream;
 }
 
 /**

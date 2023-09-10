@@ -94,6 +94,9 @@ CK_DEFINES = [
 }) + select({
     ":enable_webgl_true": ["CK_ENABLE_WEBGL"],
     "//conditions:default": [],
+}) + select({
+    ":enable_pdf_true": ["CK_INCLUDE_PDF"],
+    ":enable_pdf_false": [],
 })
 
 CK_RELEASE_OPTS = [
@@ -204,6 +207,12 @@ CK_LINKOPTS = BASE_LINKOPTS + [
         "modules/canvaskit/matrix.js",
     ],
     ":include_matrix_js_false": [],
+}) + select({
+    ":enable_pdf_true": [
+        "--pre-js",
+        "modules/canvaskit/pdf.js",
+    ],
+    ":enable_pdf_false": [],
 }) + [
     # This must come last
     "--pre-js",
@@ -232,6 +241,7 @@ JS_INTERFACE_FILES = [
     "memory.js",
     "paragraph.js",
     "pathops.js",
+    "pdf.js",
     "postamble.js",
     "preamble.js",
     "release.js",
@@ -398,6 +408,11 @@ bool_flag(
 
 bool_flag(
     name = "enable_runtime_effect",
+    default = False,
+)
+
+bool_flag(
+    name = "enable_pdf",
     default = False,
 )
 
