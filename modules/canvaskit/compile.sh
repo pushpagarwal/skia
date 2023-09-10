@@ -158,6 +158,11 @@ if [[ $@ == *no_paragraph* ]] || [[ $@ == *primitive_shaper* ]] || [[ $@ == *no_
   ENABLE_PARAGRAPH="false"
 fi
 
+ENABLE_PDF="true"
+if [[ $@ == *no_pdf* ]]; then
+  ENABLE_PDF="false"
+fi
+
 DO_DECODE="true"
 if [[ $@ == *no_codecs* ]]; then
   echo "Omitting codecs"
@@ -244,7 +249,7 @@ echo "Compiling"
   \
   skia_enable_skshaper=true \
   skia_enable_skparagraph=true \
-  skia_enable_pdf=false \
+  skia_enable_pdf=${ENABLE_PDF} \
   skia_canvaskit_enable_rt_shader=true \
   skia_canvaskit_force_tracing=${FORCE_TRACING} \
   skia_canvaskit_profile_build=${PROFILE_BUILD} \
@@ -261,6 +266,7 @@ echo "Compiling"
   skia_canvaskit_legacy_draw_vertices_blend_mode=${LEGACY_DRAW_VERTICES} \
   skia_canvaskit_enable_debugger=${DEBUGGER_ENABLED} \
   skia_canvaskit_enable_paragraph=${ENABLE_PARAGRAPH} \
+  skia_canvaskit_enable_pdf=${ENABLE_PDF} \
   skia_canvaskit_enable_webgl=${ENABLE_WEBGL} \
   skia_canvaskit_enable_webgpu=${ENABLE_WEBGPU}"
 
