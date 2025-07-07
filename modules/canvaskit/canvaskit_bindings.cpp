@@ -45,6 +45,7 @@
 #include "include/core/SkTypeface.h"
 #include "include/core/SkTypes.h"
 #include "include/core/SkVertices.h"
+#include "include/docs/SkPDFJpegHelpers.h"
 #include "include/effects/Sk1DPathEffect.h"
 #include "include/effects/Sk2DPathEffect.h"
 #include "include/effects/SkCornerPathEffect.h"
@@ -1570,8 +1571,8 @@ EMSCRIPTEN_BINDINGS(Skia) {
             return toBytes(data);
         }));
     
-    function("MakePDFDocument", optional_override([](SkDynamicMemoryWStream* stream)->sk_sp<SkDocument> {
-        return SkPDF::MakeDocument(stream);
+    function("MakePDFDocument", optional_override([](SkDynamicMemoryWStream& stream)->sk_sp<SkDocument> {
+        return SkPDF::MakeDocument(&stream, SkPDF::JPEG::MetadataWithCallbacks());
     }), allow_raw_pointers());
     constant("pdf", true);
 #endif
