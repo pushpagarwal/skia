@@ -894,6 +894,98 @@ sk_sp<SkData> alwaysSaveTypefaceBytes(SkTypeface* face, void*) {
     return face->serialize(SkTypeface::SerializeBehavior::kDoIncludeData);
 }
 
+#ifdef CK_INCLUDE_PDF
+
+struct SimplePDFTagAttribute {
+    std::string owner;
+    std::string name;
+    std::string valueType; // "name", "int", "float", "float-array" "node-id-array"
+    std::string nameValue; // This is the value of the name, if valueType is "name".
+    int intValue;
+    float floatValue; // This is the value of the float, if valueType is "float".
+    std::vector<float> floatValues; // This is the value of the float, if valueType is "float".
+    std::vector<int32_t> nodeIdArray; // This is the value of the node ID array, if valueType is "node-id-array".
+
+    void AppendToAttributeList(SkPDF::AttributeList& list) const {
+        if (valueType == "name") {
+            list.appendName(owner.c_str(), name.c_str(), nameValue.c_str());
+        }
+        else if (valueType == "float") {
+            list.appendFloat(owner.c_str(), name.c_str(), floatValue);
+        }
+        else if (valueType == "int") {
+            list.appendInt(owner.c_str(), name.c_str(), intValue);
+        }
+        else if (valueType == "float" && floatValues.size() > 0) {
+            list.appendFloatArray(owner.c_str(), name.c_str(), floatValues);
+        }
+        else if (valueType == "node-id-array" && nodeIdArray.size() > 0) {
+            list.appendNodeIdArray(owner.c_str(), name.c_str(), nodeIdArray);
+        }
+    }
+};
+
+struct SimplePDFTag {
+    int id = 0;
+    std::string type;
+    std::string alt;
+    std::string language;
+    std::vector<SimplePDFTagAttribute> attributes;
+    std::vector<SimplePDFTag> children;
+    std::unique_ptr<SkPDF::StructureElementNode> toSkPDFTag() const {
+        auto tag = std::make_unique<SkPDF::StructureElementNode>();
+        tag->fNodeId = id;
+        tag->fTypeString = SkString(type);
+        tag->fAlt = SkString(alt);
+        tag->fLang = SkString(language);
+        for (const auto& attr : attributes) {
+            attr.AppendToAttributeList(tag->fAttributes);
+        }
+        for (const auto& child : children) {
+            tag->fChildVector.push_back(child.toSkPDFTag());
+        }
+        return tag;
+    }
+    ~SimplePDFTag() {
+        // This destructor is needed to ensure that the unique_ptrs in the children vector
+        // are properly cleaned up.
+        children.clear();
+        attributes.clear();
+    }
+};
+
+struct SimplePDFMetadata {
+    std::string title;
+    std::string author;
+    std::string subject;
+    std::string keywords;
+    std::string creator;
+    std::string producer;
+    std::string language;
+    SkScalar rasterDPI = 0;
+    bool PDFA = false;
+    SimplePDFTag rootTag;
+
+    operator SkPDF::Metadata() const {
+        SkPDF::Metadata meta(SkPDF::JPEG::MetadataWithCallbacks());
+        meta.fTitle = SkString(title);
+        meta.fAuthor = SkString(author);
+        meta.fSubject = SkString(subject);
+        meta.fKeywords = SkString(keywords);
+        meta.fCreator = SkString(creator);
+        meta.fProducer = SkString(producer);
+        meta.fLang = SkString(language);
+        meta.fRasterDPI = rasterDPI;
+        meta.fPDFA = PDFA;
+        auto rootTagPtr = rootTag.toSkPDFTag();
+        meta.fStructureElementTreeRoot = rootTagPtr.release();
+        return meta;
+    }
+};
+
+#endif // CK_INCLUDE_PDF
+
+
 // These objects have private destructors / delete methods - I don't think
 // we need to do anything other than tell emscripten to do nothing.
 namespace emscripten {
@@ -1554,6 +1646,40 @@ EMSCRIPTEN_BINDINGS(Skia) {
         .function("length", &SkContourMeasure::length);
 
 #ifdef CK_INCLUDE_PDF
+    value_object<SimplePDFTagAttribute>("PDFTagAttribute")
+        .field("owner", &SimplePDFTagAttribute::owner)
+        .field("name", &SimplePDFTagAttribute::name)
+        .field("valueType", &SimplePDFTagAttribute::valueType)
+        .field("floatValues", &SimplePDFTagAttribute::floatValues)
+        .field("nodeIdArray", &SimplePDFTagAttribute::nodeIdArray)
+        .field("nameValue", &SimplePDFTagAttribute::nameValue)
+        .field("intValue", &SimplePDFTagAttribute::intValue)
+        .field("floatValue", &SimplePDFTagAttribute::floatValue);
+
+    value_object<SimplePDFTag>("PDFTag")
+        .field("id", &SimplePDFTag::id)
+        .field("type", &SimplePDFTag::type)
+        .field("alt", &SimplePDFTag::alt)
+        .field("attributes", &SimplePDFTag::attributes)
+        .field("children", &SimplePDFTag::children);
+
+    value_object<SimplePDFMetadata>("PDFMetadata")
+        .field("title",      &SimplePDFMetadata::title)
+        .field("author",     &SimplePDFMetadata::author)
+        .field("subject",    &SimplePDFMetadata::subject)
+        .field("keywords",   &SimplePDFMetadata::keywords)
+        .field("creator",    &SimplePDFMetadata::creator)
+        .field("producer",   &SimplePDFMetadata::producer)
+        .field("language",   &SimplePDFMetadata::language)
+        .field("rasterDPI",  &SimplePDFMetadata::rasterDPI)
+        .field("PDFA",       &SimplePDFMetadata::PDFA)
+        .field("rootTag",    &SimplePDFMetadata::rootTag);
+
+    emscripten::register_vector<SimplePDFTagAttribute> ("PDFTagAttributeVector");
+    emscripten::register_vector<SimplePDFTag> ("PDFTagVector");
+    emscripten::register_vector<int> ("IntVector");
+    emscripten::register_vector<float> ("FloatVector");
+
     class_<SkDocument>("Document")
         .smart_ptr<sk_sp<SkDocument>>("sk_sp<SkDocument>")
         .function("_beginPage", optional_override([](SkDocument& self, SkScalar width, SkScalar height, WASMPointerF32 fPtr)-> SkCanvas* {
@@ -1570,10 +1696,16 @@ EMSCRIPTEN_BINDINGS(Skia) {
             auto data = self.detachAsData();
             return toBytes(data);
         }));
-    
-    function("MakePDFDocument", optional_override([](SkDynamicMemoryWStream& stream)->sk_sp<SkDocument> {
-        return SkPDF::MakeDocument(&stream, SkPDF::JPEG::MetadataWithCallbacks());
-    }), allow_raw_pointers());
+
+    function("MakePDFDocument", optional_override([](SkDynamicMemoryWStream& stream, SimplePDFMetadata metadata)->sk_sp<SkDocument> {
+        auto pdfMetadata = static_cast<SkPDF::Metadata>(metadata);
+        auto document = SkPDF::MakeDocument(&stream, pdfMetadata);
+        delete pdfMetadata.fStructureElementTreeRoot; 
+        return document;
+    }));
+    function("SetPDFTagId", optional_override([](SkCanvas& canvas, int32_t tagId) {
+        SkPDF::SetNodeId(&canvas, tagId);
+    }));
     constant("pdf", true);
 #endif
 
