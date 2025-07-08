@@ -462,9 +462,10 @@ export interface CanvasKit {
     /**
      * returns a new PDF document.
      * @param stream - stream to store content of file.
+     * @param metadata - metadata to be used in the PDF document.
      * This function would be available only if compiled with PDF support.
      */
-    MakePDFDocument(stream:DynamicMemoryStream): SkDocument;
+    MakePDFDocument(stream:DynamicMemoryStream, metadata: PDFMetadata): SkDocument;
 
     // Constructors, i.e. things made with `new CanvasKit.Foo()`;
     readonly ImageData: ImageDataConstructor;
@@ -474,6 +475,7 @@ export interface CanvasKit {
     readonly Font: FontConstructor;
     readonly Paint: DefaultConstructor<Paint>;
     readonly Path: PathConstructorAndFactory;
+    readonly PDFMetadata: PDFMetadataConstructor;
     readonly PictureRecorder: DefaultConstructor<PictureRecorder>;
     readonly TextStyle: TextStyleConstructor;
     readonly SlottableTextProperty: SlottableTextPropertyConstructor;
@@ -1935,8 +1937,56 @@ export interface FontMetrics {
     bounds?: Rect;      // smallest rect containing all glyphs (relative to 0,0)
 }
 
+/**
+ * See AttributeList in SkPDFDocument.h for more on this class.
+ * Represents PDF Tag node or StructureElementNode in document structure.
+ * This is used to store information about the PDF document and document structure for tags.
+ * This value object would be available only if compiled with PDF support.
+ */
+export interface PDFTagAttribute {
+    owner: string; // owner of the attribute, e.g. "SkImage"
+    name: string;  // name of the attribute, e.g. "width"
+    type: string;  // type of the attribute, e.g. "int", "float", "name", "node-id-array", "float-array"
+    value: string | number | number[]; // value of the attribute, e.g. 100, 1.0
+}
 
+/**
+ * See StructureElementNode in SkPDFDocument.h for more on this class.
+ * Represents PDF Tag node or StructureElementNode in document structure.
+ * This value object would be available only if compiled with PDF support.
+ */
+export interface PDFTag {
+    id?: number; // unique identifier for the element
+    type?: string;
+    alt?: string; // alternative text for the element
+    language?: string; // language of the element
+    attributes?: PDFTagAttribute[]; // attributes of the element
+    children?: PDFTag[]; // child elements of this tag
+}
 
+/**
+ * See Metadata in SkPDFDocument.h for more on this class.
+ * Represents metadata for a PDF document.
+ * This is used to store information about the PDF document and document structure for tags.
+ * This value object would be available only if compiled with PDF support.
+ */
+export interface PDFMetadata {
+    title?: string;          // Title of the document.
+    author?: string;         // Author of the document.
+    subject?: string;        // Subject of the document.
+    keywords?: string;       // Keywords associated with the document.
+    creator?: string;        // Application that created the document.
+    producer?: string;       // Application that produced the document.
+    language?: string;      // Language of the document.
+    rasterDPI?: number;     // DPI for raster images in the document.
+    PDFA?: boolean;         // Whether the document is PDF/A compliant.
+    rootTag?: PDFTag;       // Root of the structure element tree or PDF tag tree.
+    freeTags?: () => void;
+}
+
+export interface PDFMetadataConstructor {
+    new(metadata?: PDFMetadata): PDFMetadata;
+}
 /**
  * See SkDocument.h for more on this class.
  * This class would be available only if compiled with PDF support.
