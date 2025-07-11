@@ -137,6 +137,16 @@ void SkPDF::AttributeList::appendInt(const char* owner, const char* name, int va
     fAttrs->appendObject(std::move(attrDict));
 }
 
+void SkPDF::AttributeList::appendInt(SkString owner, SkString name, int value) {
+    if (!fAttrs) {
+        fAttrs = SkPDFMakeArray();
+    }
+    std::unique_ptr<SkPDFDict> attrDict = SkPDFMakeDict();
+    attrDict->insertName("O", owner);
+    attrDict->insertInt(name, value);
+    fAttrs->appendObject(std::move(attrDict));
+}
+
 void SkPDF::AttributeList::appendFloat(const char* owner, const char* name, float value) {
     if (!fAttrs) {
         fAttrs = SkPDFMakeArray();
@@ -147,7 +157,27 @@ void SkPDF::AttributeList::appendFloat(const char* owner, const char* name, floa
     fAttrs->appendObject(std::move(attrDict));
 }
 
+void SkPDF::AttributeList::appendFloat(SkString owner, SkString name, float value) {
+    if (!fAttrs) {
+        fAttrs = SkPDFMakeArray();
+    }
+    std::unique_ptr<SkPDFDict> attrDict = SkPDFMakeDict();
+    attrDict->insertName("O", owner);
+    attrDict->insertScalar(name, value);
+    fAttrs->appendObject(std::move(attrDict));
+}
+
 void SkPDF::AttributeList::appendName(const char* owner, const char* name, const char* value) {
+    if (!fAttrs) {
+        fAttrs = SkPDFMakeArray();
+    }
+    std::unique_ptr<SkPDFDict> attrDict = SkPDFMakeDict();
+    attrDict->insertName("O", owner);
+    attrDict->insertName(name, value);
+    fAttrs->appendObject(std::move(attrDict));
+}
+
+void SkPDF::AttributeList::appendName(SkString owner, SkString name, SkString value) {
     if (!fAttrs) {
         fAttrs = SkPDFMakeArray();
     }
@@ -172,7 +202,39 @@ void SkPDF::AttributeList::appendFloatArray(const char* owner, const char* name,
     fAttrs->appendObject(std::move(attrDict));
 }
 
+void SkPDF::AttributeList::appendFloatArray(SkString owner, SkString name,
+                                            const std::vector<float>& value) {
+    if (!fAttrs) {
+        fAttrs = SkPDFMakeArray();
+    }
+    std::unique_ptr<SkPDFDict> attrDict = SkPDFMakeDict();
+    attrDict->insertName("O", owner);
+    std::unique_ptr<SkPDFArray> pdfArray = SkPDFMakeArray();
+    for (float element : value) {
+        pdfArray->appendScalar(element);
+    }
+    attrDict->insertObject(name, std::move(pdfArray));
+    fAttrs->appendObject(std::move(attrDict));
+}
+
 void SkPDF::AttributeList::appendNodeIdArray(const char* owner, const char* name,
+                                             const std::vector<int>& elemIds) {
+    if (!fAttrs) {
+        fAttrs = SkPDFMakeArray();
+    }
+    // Keep the element identifiers so we can mark their targets as used (and needing /ID) later.
+    fElemIds.insert(fElemIds.end(), elemIds.begin(), elemIds.end());
+    std::unique_ptr<SkPDFDict> attrDict = SkPDFMakeDict();
+    attrDict->insertName("O", owner);
+    std::unique_ptr<SkPDFArray> pdfArray = SkPDFMakeArray();
+    for (int elemId : elemIds) {
+        pdfArray->appendByteString(SkPDFStructElem::StringFromElemId(elemId));
+    }
+    attrDict->insertObject(name, std::move(pdfArray));
+    fAttrs->appendObject(std::move(attrDict));
+}
+
+void SkPDF::AttributeList::appendNodeIdArray(SkString owner, SkString name,
                                              const std::vector<int>& elemIds) {
     if (!fAttrs) {
         fAttrs = SkPDFMakeArray();
@@ -328,8 +390,14 @@ SkPDFIndirectReference SkPDFStructElem::emitStructElem(
         std::unique_ptr<SkPDFArray> kids(new SkPDFOptionalArray());
         for (auto&& child : fChildren) {
             if (child.fUsed) {
-                kids->appendRef(child.emitStructElem(fRef, idTree, doc));
-            }
+                auto childRef = child.emitStructElem(fRef, idTree, doc);
+                if (childRef.fValue != 0) {
+                    kids->appendRef(childRef);
+                }
+                else {
+                    dict.insertInt("Q", child.fElemId);
+                }
+            } 
         }
         if (!fMarkedContent.empty()) {
             // Use the mode page as /Pg and use integer mcid for marks on that page.

@@ -509,6 +509,10 @@ void SkPDFDict::insertInt(const char key[], int32_t value) {
     fRecords.emplace_back(SkPDFUnion::Name(key), SkPDFUnion::Int(value));
 }
 
+void SkPDFDict::insertInt(SkString key, int32_t value) {
+    fRecords.emplace_back(SkPDFUnion::Name(std::move(key)), SkPDFUnion::Int(value));
+}
+
 void SkPDFDict::insertInt(const char key[], size_t value) {
     this->insertInt(key, SkToS32(value));
 }
@@ -521,12 +525,20 @@ void SkPDFDict::insertScalar(const char key[], SkScalar value) {
     fRecords.emplace_back(SkPDFUnion::Name(key), SkPDFUnion::Scalar(value));
 }
 
+void SkPDFDict::insertScalar(SkString key, SkScalar value) {
+    fRecords.emplace_back(SkPDFUnion::Name(std::move(key)), SkPDFUnion::Scalar(value));
+}
+
 void SkPDFDict::insertName(const char key[], const char name[]) {
     fRecords.emplace_back(SkPDFUnion::Name(key), SkPDFUnion::Name(name));
 }
 
 void SkPDFDict::insertName(const char key[], SkString name) {
     fRecords.emplace_back(SkPDFUnion::Name(key), SkPDFUnion::Name(std::move(name)));
+}
+
+void SkPDFDict::insertName(SkString key, SkString name) {
+    fRecords.emplace_back(SkPDFUnion::Name(std::move(key)), SkPDFUnion::Name(std::move(name)));
 }
 
 void SkPDFDict::insertByteString(const char key[], const char value[]) {
