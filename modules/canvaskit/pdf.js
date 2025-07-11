@@ -11,29 +11,36 @@ CanvasKit._extraInitializations.push(function() {
         // Use [''] to tell closure not to minify the names 
         attr = attr || {};
         attr['name'] = attr['name'] || '';
-        attr['valueType'] = attr['valueType'] || '';
+        attr['type'] = attr['type'] || '';
         attr['owner'] = attr['owner'] || '';
-        if(attr['valueType'] === 'name') {
+        if(attr['type'] === 'name') {
             attr['nameValue'] = attr['nameValue'] || '';
-        } else if(attr['valueType'] === 'int') {
+        } else if(attr['type'] === 'int') {
             attr['intValue'] = attr['intValue'] || 0;
-        } else if(attr['valueType'] === 'float') {
+        } else if(attr['type'] === 'float') {
             attr['floatValue'] = attr['floatValue'] || 0.0;
-        } else if(attr['valueType'] === 'float-array') {
+        } else if(attr['type'] === 'float-array') {
             var floatValues = new CanvasKit.FloatVector();
             for (var i = 0; i < attr['floatValues'].length; i++) {
                 floatValues.push_back(attr['floatValues'][i]);
             }
             attr['floatValues'] = floatValues;
-        } else if(attr['valueType'] === 'node-id-array') {
+        } else if(attr['type'] === 'node-id-array') {
             var nodeIdArray = new CanvasKit.IntVector();
             for (var i = 0; i < attr['nodeIdArray'].length; i++) {
                 nodeIdArray.push_back(attr['nodeIdArray'][i]);
-            }
+            } 
             attr['nodeIdArray'] = nodeIdArray;
         } else {
-            throw new Error('PDFTagAttribute: Unknown valueType: ' + attr['valueType']);
+            throw new Error('PDFTagAttribute: Unknown type: ' + attr['type']);
         }
+        attr['nameValue'] = attr['nameValue'] || '';
+        attr['floatValues'] = attr['floatValues'] || new CanvasKit.FloatVector();
+        attr['nodeIdArray'] = attr['nodeIdArray'] || new CanvasKit.IntVector();
+        attr['intValue'] = attr['intValue'] || 0;
+        attr['floatValue'] = attr['floatValue'] || 0.0;
+
+
         return attr;
     }
 
