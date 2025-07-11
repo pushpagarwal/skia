@@ -192,11 +192,14 @@ public:
      */
     void insertBool(const char key[], bool value);
     void insertInt(const char key[], int32_t value);
+    void insertInt(SkString, int32_t value);
     void insertInt(const char key[], size_t value);
     void insertScalar(const char key[], SkScalar value);
+    void insertScalar(SkString, SkScalar value);
     void insertColorComponentF(const char key[], SkScalar value);
     void insertName(const char key[], const char nameValue[]);
     void insertName(const char key[], SkString nameValue);
+    void insertName(SkString key, SkString nameValue);
     void insertByteString(const char key[], const char value[]);
     void insertTextString(const char key[], const char value[]);
     void insertByteString(const char key[], SkString value);

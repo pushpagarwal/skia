@@ -39,13 +39,22 @@ public:
     // and an attribute name (e.g. "BBox", "RowSpan", etc.) from PDF32000_2008 14.8.5,
     // and then a value of the proper type according to the spec.
     void appendInt(const char* owner, const char* name, int value);
+    void appendInt(SkString owner, SkString name, int value);
     void appendFloat(const char* owner, const char* name, float value);
+    void appendFloat(SkString owner, SkString name, float value);
     void appendName(const char* owner, const char* attrName, const char* value);
+    void appendName(SkString owner, SkString attrName, SkString value);
     void appendFloatArray(const char* owner,
                           const char* name,
                           const std::vector<float>& value);
+     void appendFloatArray(SkString owner,
+                          SkString name,
+                          const std::vector<float>& value);                         
     void appendNodeIdArray(const char* owner,
                            const char* attrName,
+                           const std::vector<int>& nodeIds);
+    void appendNodeIdArray(SkString owner,
+                           SkString attrName,
                            const std::vector<int>& nodeIds);
 
 private:

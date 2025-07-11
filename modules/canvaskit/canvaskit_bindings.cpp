@@ -899,28 +899,28 @@ sk_sp<SkData> alwaysSaveTypefaceBytes(SkTypeface* face, void*) {
 struct SimplePDFTagAttribute {
     std::string owner;
     std::string name;
-    std::string valueType; // "name", "int", "float", "float-array" "node-id-array"
-    std::string nameValue; // This is the value of the name, if valueType is "name".
+    std::string type; // "name", "int", "float", "float-array" "node-id-array"
+    std::string nameValue; // This is the value of the name, if type is "name".
     int intValue;
-    float floatValue; // This is the value of the float, if valueType is "float".
-    std::vector<float> floatValues; // This is the value of the float, if valueType is "float".
-    std::vector<int32_t> nodeIdArray; // This is the value of the node ID array, if valueType is "node-id-array".
+    float floatValue; // This is the value of the float, if type is "float".
+    std::vector<float> floatValues; // This is the value of the float, if type is "float".
+    std::vector<int32_t> nodeIdArray; // This is the value of the node ID array, if type is "node-id-array".
 
     void AppendToAttributeList(SkPDF::AttributeList& list) const {
-        if (valueType == "name") {
-            list.appendName(owner.c_str(), name.c_str(), nameValue.c_str());
+        if (type == "name") {
+            list.appendName(SkString(owner), SkString(name), SkString(nameValue));
         }
-        else if (valueType == "float") {
-            list.appendFloat(owner.c_str(), name.c_str(), floatValue);
+        else if (type == "float") {
+            list.appendFloat(SkString(owner), SkString(name), floatValue);
         }
-        else if (valueType == "int") {
-            list.appendInt(owner.c_str(), name.c_str(), intValue);
+        else if (type == "int") {
+            list.appendInt(SkString(owner), SkString(name), intValue);
         }
-        else if (valueType == "float" && floatValues.size() > 0) {
-            list.appendFloatArray(owner.c_str(), name.c_str(), floatValues);
+        else if (type == "float" && floatValues.size() > 0) {
+            list.appendFloatArray(SkString(owner), SkString(name), floatValues);
         }
-        else if (valueType == "node-id-array" && nodeIdArray.size() > 0) {
-            list.appendNodeIdArray(owner.c_str(), name.c_str(), nodeIdArray);
+        else if (type == "node-id-array" && nodeIdArray.size() > 0) {
+            list.appendNodeIdArray(SkString(owner), SkString(name), nodeIdArray);
         }
     }
 };
@@ -977,6 +977,7 @@ struct SimplePDFMetadata {
         meta.fLang = SkString(language);
         meta.fRasterDPI = rasterDPI;
         meta.fPDFA = PDFA;
+        meta.fCompressionLevel = SkPDF::Metadata::CompressionLevel::None; // Default to no compression.
         auto rootTagPtr = rootTag.toSkPDFTag();
         meta.fStructureElementTreeRoot = rootTagPtr.release();
         return meta;
@@ -1649,7 +1650,7 @@ EMSCRIPTEN_BINDINGS(Skia) {
     value_object<SimplePDFTagAttribute>("PDFTagAttribute")
         .field("owner", &SimplePDFTagAttribute::owner)
         .field("name", &SimplePDFTagAttribute::name)
-        .field("valueType", &SimplePDFTagAttribute::valueType)
+        .field("type", &SimplePDFTagAttribute::type)
         .field("floatValues", &SimplePDFTagAttribute::floatValues)
         .field("nodeIdArray", &SimplePDFTagAttribute::nodeIdArray)
         .field("nameValue", &SimplePDFTagAttribute::nameValue)
