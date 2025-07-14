@@ -965,6 +965,7 @@ struct SimplePDFMetadata {
     SkScalar rasterDPI = 0;
     bool PDFA = false;
     SimplePDFTag rootTag;
+    int compressionLevel = SkPDF::Metadata::CompressionLevel::Default; 
 
     operator SkPDF::Metadata() const {
         SkPDF::Metadata meta(SkPDF::JPEG::MetadataWithCallbacks());
@@ -977,7 +978,7 @@ struct SimplePDFMetadata {
         meta.fLang = SkString(language);
         meta.fRasterDPI = rasterDPI;
         meta.fPDFA = PDFA;
-        meta.fCompressionLevel = SkPDF::Metadata::CompressionLevel::None; // Default to no compression.
+        meta.fCompressionLevel = compressionLevel;
         auto rootTagPtr = rootTag.toSkPDFTag();
         meta.fStructureElementTreeRoot = rootTagPtr.release();
         return meta;
@@ -1674,7 +1675,8 @@ EMSCRIPTEN_BINDINGS(Skia) {
         .field("language",   &SimplePDFMetadata::language)
         .field("rasterDPI",  &SimplePDFMetadata::rasterDPI)
         .field("PDFA",       &SimplePDFMetadata::PDFA)
-        .field("rootTag",    &SimplePDFMetadata::rootTag);
+        .field("rootTag",    &SimplePDFMetadata::rootTag)
+        .field("compressionLevel", &SimplePDFMetadata::compressionLevel);
 
     emscripten::register_vector<SimplePDFTagAttribute> ("PDFTagAttributeVector");
     emscripten::register_vector<SimplePDFTag> ("PDFTagVector");
