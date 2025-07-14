@@ -886,6 +886,7 @@ var CanvasKit = {
 
   WStream: {
     // public API (from C++ bindings)
+    bytesWritten: function() {},
     flush: function() {},
   },
 
