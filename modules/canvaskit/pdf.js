@@ -61,18 +61,19 @@ CanvasKit._extraInitializations.push(function() {
       // Use [''] to tell closure not to minify the names
       pdfTag = pdfTag || {};
       pdfTag['id'] = pdfTag['id'] || 0;
+      pdfTag['type'] = pdfTag['type'] || 'NonStruct';
       pdfTag['alt'] = pdfTag['alt'] || '';
       pdfTag['lang'] = pdfTag['lang'] || '';
-      var children = new CanvasKit.PDFTagVector();
+      let children = new CanvasKit.PDFTagVector();
       if (pdfTag['children'] && pdfTag['children'].length > 0) {
-          for (var i = 0; i < pdfTag['children'].length; i++) {
+          for (let i = 0; i < pdfTag['children'].length; i++) {
               children.push_back(initPDFTag(pdfTag['children'][i]));
           }
       }
       pdfTag['children'] = children;
-      var attributes = new CanvasKit.PDFTagAttributeVector();
+      let attributes = new CanvasKit.PDFTagAttributeVector();
       if (pdfTag['attributes'] && pdfTag['attributes'].length > 0) {
-          for (var i = 0; i < pdfTag['attributes'].length; i++) {
+          for (let i = 0; i < pdfTag['attributes'].length; i++) {
               attributes.push_back(initAttribute(pdfTag['attributes'][i]));
           }
       }
@@ -83,14 +84,14 @@ CanvasKit._extraInitializations.push(function() {
     function freeTags(tag) {
         // Free the children first, so that we don't have dangling pointers.
         if (tag.children) {
-            for (var i = 0; i < tag.children.length; i++) {
+            for (let i = 0; i < tag.children.length; i++) {
                 freeTags(tag.children[i]);
             }
         }
         tag.children.delete();
         // Free the attributes.
         if (tag.attributes) {
-            for (var i = 0; i < tag.attributes.length; i++) {
+            for (let i = 0; i < tag.attributes.length; i++) {
                 freeAttribute(tag.attributes[i]);
             }
         }
@@ -112,6 +113,7 @@ CanvasKit._extraInitializations.push(function() {
         metadata['rasterDPI'] = metadata['rasterDPI'] || 72;
         metadata['PDFA'] = !!metadata['PDFA'];
         metadata['rootTag'] = initPDFTag(metadata['rootTag']);
+        metadata['compressionLevel'] = metadata['compressionLevel'] || CanvasKit.PDFCompressionLevel.Default;
         metadata['freeTags'] = metadata['freeTags'] || function() {
           if (this.rootTag) {
             freeTags(this.rootTag);

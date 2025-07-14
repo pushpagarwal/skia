@@ -2127,10 +2127,29 @@ export interface SkDocument extends EmbindObject<"SkDocument"> {
 }
 
 /**
+ * See SkStream.h for more on this class.
+ * This class would be available only if compiled with PDF support.
+ * WStream is a writable stream that can be used to write data to a destination.
+ * It is an abstract class, and the actual implementation
+ */
+export interface WStream extends EmbindObject<"WStream"> {
+    /**
+     * Returns number of bytes written to the stream so far.
+     */
+    bytesWritten(): number;
+    /**
+     * Flushes the stream, ensuring that all data is written to the destination.
+     */
+    flush(): void;
+}
+
+/**
  * See SkDynamicMemoryWStream.h for more on this class.
  * This class would be available only if compiled with PDF support.
+ * DynamicMemoryStream is a writable stream that can be used to write data to a destination.
+ * It is a concrete implementation of WStream that writes data to memory.
  */
-export interface DynamicMemoryStream extends EmbindObject<"DynamicMemoryStream"> {
+export interface DynamicMemoryStream extends WStream {
     /**
      * Return the contents as bytes, and then reset the stream.
      * @returns the contents as bytes.
