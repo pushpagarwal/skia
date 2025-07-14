@@ -390,14 +390,8 @@ SkPDFIndirectReference SkPDFStructElem::emitStructElem(
         std::unique_ptr<SkPDFArray> kids(new SkPDFOptionalArray());
         for (auto&& child : fChildren) {
             if (child.fUsed) {
-                auto childRef = child.emitStructElem(fRef, idTree, doc);
-                if (childRef.fValue != 0) {
-                    kids->appendRef(childRef);
-                }
-                else {
-                    dict.insertInt("Q", child.fElemId);
-                }
-            } 
+                kids->appendRef(child.emitStructElem(fRef, idTree, doc));
+            }
         }
         if (!fMarkedContent.empty()) {
             // Use the mode page as /Pg and use integer mcid for marks on that page.
