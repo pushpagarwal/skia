@@ -159,7 +159,9 @@ skia_wasm_lib("canvaskit") {
   if (skia_canvaskit_enable_rt_shader) {
     sources += [ "../../tools/sksltrace/SkSLTraceUtils.cpp" ]
   }
-
+  if(skia_canvaskit_enable_pdf) {
+    sources += ["pdf_bindings.cpp" ]
+  }
   ldflags =
       [ "-sEXPORTED_RUNTIME_METHODS=HEAP32,HEAPU8,HEAPU16,HEAPU32,HEAPF32" ]
   if (is_debug) {
