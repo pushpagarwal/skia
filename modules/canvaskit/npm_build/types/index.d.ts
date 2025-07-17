@@ -2099,9 +2099,8 @@ export interface PDFMetadataConstructor {
 /**
  * See SkDocument.h for more on this class.
  * This class would be available only if compiled with PDF support.
- * Type name "SkDocument" is chosen to resolve conflict with Document class in DOM.
  */
-export interface SkDocument extends EmbindObject<"SkDocument"> {
+export interface Document extends EmbindObject<"SkDocument"> {
     /**
      * Closes the document and frees any resources associated with it.
      * This must be called before the document is destroyed.

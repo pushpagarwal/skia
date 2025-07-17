@@ -22,6 +22,18 @@
 //   https://github.com/google/closure-compiler/tree/master/externs
 //
 
+var Vector = {
+  push_back: function() {},
+  size: function() {},
+  at: function() {},
+  clear: function() {},
+  reserve: function() {},
+  resize: function() {},
+  pop_back: function() {},
+  insert: function() {},
+  erase: function() {},
+};
+
 var CanvasKit = {
   // public API (i.e. things we declare in the pre-js file or in the cpp bindings)
   Color: function() {},
@@ -1003,6 +1015,8 @@ var CanvasKit = {
     Nearest: {},
   },
 
+  FloatVector: Vector,
+
   FontSlant: {
     Upright: {},
     Italic: {},
@@ -1051,6 +1065,8 @@ var CanvasKit = {
     JPEG: {},
   },
 
+  IntVector: Vector,
+
   PaintStyle: {
     Fill: {},
     Stroke: {},
@@ -1063,6 +1079,17 @@ var CanvasKit = {
     XOR: {},
     ReverseDifference: {},
   },
+
+  PDFCompressionLevel: {
+    Default: {},
+    None: {},
+    LowButFast: {},
+    Average: {},
+    HighButSlow: {},
+  },
+  
+  PDFTagAttributeVector: Vector,
+  PDFTagVector: Vector,
 
   PointMode: {
     Points: {},
