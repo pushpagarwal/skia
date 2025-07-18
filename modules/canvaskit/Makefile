@@ -97,7 +97,7 @@ npm:
 	# general use case.
 	./compile.sh release no_skottie no_sksl_trace no_alias_font \
 		no_effects_deserialization no_encode_jpeg no_encode_webp legacy_draw_vertices \
-		no_embedded_font
+		no_embedded_font no_pdf 
 	cp ../../out/canvaskit_wasm/canvaskit.js       ./npm_build/bin
 	cp ../../out/canvaskit_wasm/canvaskit.wasm     ./npm_build/bin
 
