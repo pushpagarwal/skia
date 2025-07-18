@@ -1,15 +1,11 @@
 {
-  "name": "canvaskit-wasm",
-  "version": "0.40.0",
+  "name": "@rollerbird/canvaskit-wasm-pdf",
+  "version": "0.1.1",
   "description": "A WASM version of Skia's Canvas API",
-  "main": "bin/canvaskit.js",
+  "main": "bin/canvaskit-pdf.js",
   "homepage": "https://github.com/google/skia/tree/main/modules/canvaskit",
   "bugs": {
     "url": "https://bugs.chromium.org/p/skia/issues/entry"
-  },
-  "permsRepo": "skia-dev/.github",
-  "publishConfig": {
-    "registry": "https://wombat-dressing-room.appspot.com"
   },
   "scripts": {
     "dtslint": "dtslint types"
@@ -26,53 +22,53 @@
   },
   "exports": {
     ".": {
-      "require": "./bin/canvaskit.js",
-      "import": "./bin/canvaskit.js",
+      "require": "./bin/canvaskit-pdf.js",
+      "import": "./bin/canvaskit-pdf.js",
       "types": "./types/index.d.ts"
     },
     "./full": {
-      "require": "./bin/full/canvaskit.js",
-      "import": "./bin/full/canvaskit.js",
+      "require": "./bin/full/canvaskit-pdf.js",
+      "import": "./bin/full/canvaskit-pdf.js",
       "types": "./types/index.d.ts"
     },
     "./profiling": {
-      "require": "./bin/profiling/canvaskit.js",
-      "import": "./bin/profiling/canvaskit.js",
+      "require": "./bin/profiling/canvaskit-pdf.js",
+      "import": "./bin/profiling/canvaskit-pdf.js",
       "types": "./types/index.d.ts"
     },
     "./bin/canvaskit": {
-      "require": "./bin/canvaskit.js",
-      "import": "./bin/canvaskit.js",
+      "require": "./bin/canvaskit-pdf.js",
+      "import": "./bin/canvaskit-pdf.js",
       "types": "./types/index.d.ts"
     },
     "./bin/canvaskit.js": {
-      "require": "./bin/canvaskit.js",
-      "import": "./bin/canvaskit.js",
+      "require": "./bin/canvaskit-pdf.js",
+      "import": "./bin/canvaskit-pdf.js",
       "types": "./types/index.d.ts"
     },
-    "./bin/canvaskit.wasm": "./bin/canvaskit.wasm",
+    "./bin/canvaskit.wasm": "./bin/canvaskit-pdf.wasm",
     "./bin/full/canvaskit": {
-      "require": "./bin/full/canvaskit.js",
-      "import": "./bin/full/canvaskit.js",
+      "require": "./bin/full/canvaskit-pdf.js",
+      "import": "./bin/full/canvaskit-pdf.js",
       "types": "./types/index.d.ts"
     },
     "./bin/full/canvaskit.js": {
-      "require": "./bin/full/canvaskit.js",
-      "import": "./bin/full/canvaskit.js",
+      "require": "./bin/full/canvaskit-pdf.js",
+      "import": "./bin/full/canvaskit-pdf.js",
       "types": "./types/index.d.ts"
     },
-    "./bin/full/canvaskit.wasm": "./bin/full/canvaskit.wasm",
+    "./bin/full/canvaskit.wasm": "./bin/full/canvaskit-pdf.wasm",
     "./bin/profiling/canvaskit": {
-      "require": "./bin/profiling/canvaskit.js",
-      "import": "./bin/profiling/canvaskit.js",
+      "require": "./bin/profiling/canvaskit-pdf.js",
+      "import": "./bin/profiling/canvaskit-pdf.js",
       "types": "./types/index.d.ts"
     },
     "./bin/profiling/canvaskit.js": {
-      "require": "./bin/profiling/canvaskit.js",
-      "import": "./bin/profiling/canvaskit.js",
+      "require": "./bin/profiling/canvaskit-pdf.js",
+      "import": "./bin/profiling/canvaskit-pdf.js",
       "types": "./types/index.d.ts"
     },
-    "./bin/profiling/canvaskit.wasm": "./bin/profiling/canvaskit.wasm",
+    "./bin/profiling/canvaskit.wasm": "./bin/profiling/canvaskit-pdf.wasm",
     "./package.json": "./package.json"
   }
 }
