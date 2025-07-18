@@ -10,10 +10,10 @@
 using namespace emscripten;
 
 struct SimplePDFTagAttribute {
-    std::string owner;
-    std::string name;
-    std::string type;       // "name", "int", "float", "float-array" "node-id-array"
-    std::string nameValue;  // This is the value of the name, if type is "name".
+    WASMPointerU8 ownerPtr;
+    WASMPointerU8 namePtr;
+    WASMPointerU8 typePtr;       // "name", "int", "float", "float-array" "node-id-array"
+    WASMPointerU8 nameValuePtr;  // This is the value of the name, if type is "name".
     int intValue;
     float floatValue;                // This is the value of the float, if type is "float".
     std::vector<float> floatValues;  // This is the value of the float, if type is "float".
@@ -21,16 +21,27 @@ struct SimplePDFTagAttribute {
             nodeIdArray;  // This is the value of the node ID array, if type is "node-id-array".
 
     void AppendToAttributeList(SkPDF::AttributeList& list) const {
+        std::string type(reinterpret_cast<const char*>(typePtr));
         if (type == "name") {
-            list.appendName(SkString(owner), SkString(name), SkString(nameValue));
+            list.appendName(reinterpret_cast<const char*>(ownerPtr),
+                            reinterpret_cast<const char*>(namePtr),
+                            reinterpret_cast<const char*>(nameValuePtr));
         } else if (type == "float") {
-            list.appendFloat(SkString(owner), SkString(name), floatValue);
+            list.appendFloat(reinterpret_cast<const char*>(ownerPtr),
+                             reinterpret_cast<const char*>(namePtr),
+                             floatValue);
         } else if (type == "int") {
-            list.appendInt(SkString(owner), SkString(name), intValue);
+            list.appendInt(reinterpret_cast<const char*>(ownerPtr),
+                           reinterpret_cast<const char*>(namePtr),
+                           intValue);
         } else if (type == "float" && floatValues.size() > 0) {
-            list.appendFloatArray(SkString(owner), SkString(name), floatValues);
+            list.appendFloatArray(reinterpret_cast<const char*>(ownerPtr),
+                                  reinterpret_cast<const char*>(namePtr),
+                                  floatValues);
         } else if (type == "node-id-array" && nodeIdArray.size() > 0) {
-            list.appendNodeIdArray(SkString(owner), SkString(name), nodeIdArray);
+            list.appendNodeIdArray(reinterpret_cast<const char*>(ownerPtr),
+                                   reinterpret_cast<const char*>(namePtr),
+                                   nodeIdArray);
         }
     }
 };
@@ -86,6 +97,46 @@ struct SimplePDFMetadata {
     }
 };
 
+// toBytes returns a Uint8Array that has a copy of the data in the given SkData.
+// defined in canvaskit_bindings.cpp
+extern Uint8Array toBytes(sk_sp<SkData> data);
+
+class CkDocument {
+public:
+    static CkDocument* MakePDFDocument(SimplePDFMetadata metadata) {
+        SkPDF::Metadata pdfMetadata;
+        pdfMetadata.jpegDecoder = SkPDF::JPEG::Decode;
+        pdfMetadata.jpegEncoder = SkPDF::JPEG::Encode;
+        metadata.to(pdfMetadata);
+        auto stream = std::make_unique<SkDynamicMemoryWStream>();
+        auto document = SkPDF::MakeDocument(stream.get(), pdfMetadata);
+        // Clean up the root tag as SkPDF::Metadata does not take ownership of it.
+        delete pdfMetadata.fStructureElementTreeRoot;
+        return new CkDocument(std::move(document), std::move(stream));
+    }
+    SkCanvas* beginPage(SkScalar width, SkScalar height, WASMPointerF32 fPtr) {
+        const SkRect* rect = reinterpret_cast<const SkRect*>(fPtr);
+        return fDoc->beginPage(width, height, rect);
+    }
+    void endPage() { fDoc->endPage(); }
+    Uint8Array close() {
+        fDoc->close();
+        fStream->flush();
+        auto data = fStream->detachAsData();
+        return toBytes(data);
+    }
+    void abort() {
+        fDoc->abort();
+        fStream->flush();
+    }
+
+private:
+    CkDocument(sk_sp<SkDocument> doc, std::unique_ptr<SkDynamicMemoryWStream> fStream)
+            : fDoc(std::move(doc)), fStream(std::move(fStream)) {}
+    sk_sp<SkDocument> fDoc;
+    std::unique_ptr<SkDynamicMemoryWStream> fStream;
+};
+
 namespace emscripten {
 namespace internal {
 template <> void raw_destructor<SkDocument>(SkDocument* ptr) {
@@ -96,63 +147,26 @@ template <> void raw_destructor<SkDocument>(SkDocument* ptr) {
 }  // namespace internal
 }  // namespace emscripten
 
-// toBytes returns a Uint8Array that has a copy of the data in the given SkData.
-// defined in canvaskit_bindings.cpp
-extern Uint8Array toBytes(sk_sp<SkData> data);
-
 EMSCRIPTEN_BINDINGS(Pdf) {
-    class_<SkDocument>("Document")
-            .smart_ptr<sk_sp<SkDocument>>("sk_sp<SkDocument>")
-            .function("_beginPage",
-                      optional_override([](SkDocument& self,
-                                           SkScalar width,
-                                           SkScalar height,
-                                           WASMPointerF32 fPtr) -> SkCanvas* {
-                          const SkRect* rect = reinterpret_cast<const SkRect*>(fPtr);
-                          return self.beginPage(width, height, rect);
-                      }),
-                      allow_raw_pointers())
-            .function("endPage", &SkDocument::endPage)
-            .function("close", &SkDocument::close)
-            .function("abort", &SkDocument::abort);
-
-    class_<SkWStream>("WStream")
-            .function("bytesWritten", &SkWStream::bytesWritten)
-            .function("flush", &SkWStream::flush);
-
-    class_<SkDynamicMemoryWStream, base<SkWStream>>("DynamicMemoryStream")
-            .constructor<>()
-            .function("detachAsBytes",
-                      optional_override([](SkDynamicMemoryWStream& self) -> Uint8Array {
-                          auto data = self.detachAsData();
-                          return toBytes(data);
-                      }));
-
-    function("MakePDFDocument",
-             optional_override([](SkWStream& stream,
-                                  SimplePDFMetadata metadata) -> sk_sp<SkDocument> {
-                 SkPDF::Metadata pdfMetadata;
-                 pdfMetadata.jpegDecoder = SkPDF::JPEG::Decode;
-                 pdfMetadata.jpegEncoder = SkPDF::JPEG::Encode;
-                 metadata.to(pdfMetadata);
-                 auto document = SkPDF::MakeDocument(&stream, pdfMetadata);
-                 delete pdfMetadata
-                         .fStructureElementTreeRoot;  // Clean up the root tag as SkPDF::Metadata
-                                                      // does not take ownership of it.
-                 return document;
-             }));
+    class_<CkDocument>("Document")
+            .function("_beginPage", &CkDocument::beginPage, allow_raw_pointers())
+            .function("endPage", &CkDocument::endPage)
+            .function("close", &CkDocument::close)
+            .function("abort", &CkDocument::abort);
+            
+    function("_MakePDFDocument", &CkDocument::MakePDFDocument, allow_raw_pointers());
 
     function("SetPDFTagId", optional_override([](SkCanvas& canvas, int32_t tagId) {
                  SkPDF::SetNodeId(&canvas, tagId);
              }));
 
     value_object<SimplePDFTagAttribute>("PDFTagAttribute")
-            .field("owner", &SimplePDFTagAttribute::owner)
-            .field("name", &SimplePDFTagAttribute::name)
-            .field("type", &SimplePDFTagAttribute::type)
+            .field("owner", &SimplePDFTagAttribute::ownerPtr)
+            .field("name", &SimplePDFTagAttribute::namePtr)
+            .field("type", &SimplePDFTagAttribute::typePtr)
             .field("floatValues", &SimplePDFTagAttribute::floatValues)
             .field("nodeIdArray", &SimplePDFTagAttribute::nodeIdArray)
-            .field("nameValue", &SimplePDFTagAttribute::nameValue)
+            .field("nameValue", &SimplePDFTagAttribute::nameValuePtr)
             .field("intValue", &SimplePDFTagAttribute::intValue)
             .field("floatValue", &SimplePDFTagAttribute::floatValue);
 

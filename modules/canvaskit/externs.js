@@ -71,6 +71,7 @@ var CanvasKit = {
   MakeGPUCanvasSurface: function() {},
   MakeGPUTextureSurface: function() {},
   MakePDFDocument: function() {},
+  _MakePDFDocument: function() {},
   SetPDFTagId: function() {},
   MakeRasterDirectSurface: function() {},
   MakeWebGLCanvasSurface: function() {},
@@ -462,10 +463,6 @@ var CanvasKit = {
     _beginPage: function() {},
   },
 
-  DynamicMemoryStream: {
-    // public API (from C++ bindings)
-    detachAsBytes: function() {},
-  },
 
   Font: {
     // public API (from C++ bindings)
@@ -894,13 +891,6 @@ var CanvasKit = {
   },
 
   TextStyle: function() {},
-
-
-  WStream: {
-    // public API (from C++ bindings)
-    bytesWritten: function() {},
-    flush: function() {},
-  },
 
   SkpDebugPlayer: {
     // public API (from C++ bindings)
