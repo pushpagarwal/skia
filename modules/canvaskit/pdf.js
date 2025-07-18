@@ -21,22 +21,23 @@ CanvasKit._extraInitializations.push(function() {
         // there is a field undefined and it was expecting a float (for example).
         // Use [''] to tell closure not to minify the names 
         attr = attr || {};
+        var origType = attr['type'];
         attr['name'] = cacheOrCopyString(attr['name'] || '');
         attr['type'] = cacheOrCopyString(attr['type'] || '');
         attr['owner'] = cacheOrCopyString(attr['owner'] || '');
-        if(attr['type'] === 'name') {
+        if(origType === 'name') {
             attr['nameValue'] = cacheOrCopyString(attr['nameValue'] || '');
-        } else if(attr['type'] === 'int') {
+        } else if(origType === 'int') {
             attr['intValue'] = attr['intValue'] || 0;
-        } else if(attr['type'] === 'float') {
+        } else if(origType === 'float') {
             attr['floatValue'] = attr['floatValue'] || 0.0;
-        } else if(attr['type'] === 'float-array') {
+        } else if(origType === 'float-array') {
             var floatValues = new CanvasKit.FloatVector();
             for (var i = 0; i < attr['floatValues'].length; i++) {
                 floatValues.push_back(attr['floatValues'][i]);
             }
             attr['floatValues'] = floatValues;
-        } else if(attr['type'] === 'node-id-array') {
+        } else if(origType === 'node-id-array') {
             var nodeIdArray = new CanvasKit.IntVector();
             for (var i = 0; i < attr['nodeIdArray'].length; i++) {
                 nodeIdArray.push_back(attr['nodeIdArray'][i]);
