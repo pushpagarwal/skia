@@ -1,5 +1,16 @@
 CanvasKit._extraInitializations = CanvasKit._extraInitializations || [];
 CanvasKit._extraInitializations.push(function() {
+    CanvasKit.MakePDFDocument = function(metadata) {
+        // Fills out all optional fields with defaults. The emscripten bindings complain if there
+        // is a field undefined and it was expecting a float (for example).
+        metadata = initPDFMetadata(metadata);
+        var doc = CanvasKit._MakePDFDocument(metadata);
+        // Free the tags after the document is created.
+        // This is to free vectors and other memory that is not needed anymore.
+        freeTags(metadata.rootTag);
+        return doc;
+    };
+
     CanvasKit.Document.prototype.beginPage = function(width, height, rect) {
         var rPtr = copyRectToWasm(rect);
         return this._beginPage(width, height, rPtr);
@@ -10,11 +21,11 @@ CanvasKit._extraInitializations.push(function() {
         // there is a field undefined and it was expecting a float (for example).
         // Use [''] to tell closure not to minify the names 
         attr = attr || {};
-        attr['name'] = attr['name'] || '';
-        attr['type'] = attr['type'] || '';
-        attr['owner'] = attr['owner'] || '';
+        attr['name'] = cacheOrCopyString(attr['name'] || '');
+        attr['type'] = cacheOrCopyString(attr['type'] || '');
+        attr['owner'] = cacheOrCopyString(attr['owner'] || '');
         if(attr['type'] === 'name') {
-            attr['nameValue'] = attr['nameValue'] || '';
+            attr['nameValue'] = cacheOrCopyString(attr['nameValue'] || '');
         } else if(attr['type'] === 'int') {
             attr['intValue'] = attr['intValue'] || 0;
         } else if(attr['type'] === 'float') {
@@ -82,6 +93,9 @@ CanvasKit._extraInitializations.push(function() {
     }
 
     function freeTags(tag) {
+        if (!tag) {
+            return;
+        }
         // Free the children first, so that we don't have dangling pointers.
         if (tag.children) {
             for (let i = 0; i < tag.children.length; i++) {
@@ -98,7 +112,7 @@ CanvasKit._extraInitializations.push(function() {
         tag.attributes.delete();
     }
 
-    CanvasKit.PDFMetadata = function(metadata) {
+    function initPDFMetadata(metadata) {
         // Fills out all optional fields with defaults. The emscripten bindings complain if there
         // is a field undefined and it was expecting a float (for example).
         // Use [''] to tell closure not to minify the names
@@ -114,11 +128,27 @@ CanvasKit._extraInitializations.push(function() {
         metadata['PDFA'] = !!metadata['PDFA'];
         metadata['rootTag'] = initPDFTag(metadata['rootTag']);
         metadata['compressionLevel'] = metadata['compressionLevel'] || CanvasKit.PDFCompressionLevel.Default;
-        metadata['freeTags'] = metadata['freeTags'] || function() {
-          if (this.rootTag) {
-            freeTags(this.rootTag);
-          }
-        };
         return metadata;
     };
+
+     // maps string -> malloc'd pointer
+    var stringCache = {};
+
+    // cacheOrCopyString copies a string from JS into WASM on the heap and returns the pointer
+    // to the memory of the string. It is expected that a caller to this helper will *not* free
+    // that memory, so it is cached. Thus, if a future call to this function with the same string
+    // will return the cached pointer, preventing the memory usage from growing unbounded (in
+    // a normal use case).
+    // We expect that these strings will be used multiple times so would help to cache them.
+    function cacheOrCopyString(str) {
+      if (stringCache[str]) {
+        return stringCache[str];
+      }
+      // Add 1 for null terminator, which we need when copying/converting
+      var strLen = lengthBytesUTF8(str) + 1;
+      var strPtr = CanvasKit._malloc(strLen);
+      stringToUTF8(str, strPtr, strLen);
+      stringCache[str] = strPtr;
+      return strPtr;
+    }
 });

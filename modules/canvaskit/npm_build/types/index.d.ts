@@ -465,11 +465,10 @@ export interface CanvasKit {
      * created with the given metadata, which can be used to set the title, author,
      * subject, keywords, and creator of the PDF document.
      * returns a new PDF document.
-     * @param stream - stream to store content of file.
      * @param metadata - metadata to be used in the PDF document.
      * This function would be available only if compiled with PDF support.
      */
-    MakePDFDocument(stream:DynamicMemoryStream, metadata: PDFMetadata): SkDocument;
+    MakePDFDocument(metadata: PDFMetadata): Document;
     
     /**
      * See SkPDFDocument.h SkPDF::SetNodeId for more details.
@@ -483,11 +482,9 @@ export interface CanvasKit {
     readonly ImageData: ImageDataConstructor;
     readonly ParagraphStyle: ParagraphStyleConstructor;
     readonly ContourMeasureIter: ContourMeasureIterConstructor;
-    readonly DynamicMemoryStream: DynamicMemoryStreamConstructor;
     readonly Font: FontConstructor;
     readonly Paint: DefaultConstructor<Paint>;
     readonly Path: PathConstructorAndFactory;
-    readonly PDFMetadata: PDFMetadataConstructor;
     readonly PictureRecorder: DefaultConstructor<PictureRecorder>;
     readonly TextStyle: TextStyleConstructor;
     readonly SlottableTextProperty: SlottableTextPropertyConstructor;
@@ -2090,22 +2087,19 @@ export interface PDFMetadata {
     rasterDPI?: number;     // DPI for raster images in the document.
     PDFA?: boolean;         // Whether the document is PDF/A compliant.
     rootTag?: PDFTag;       // Root of the structure element tree or PDF tag tree.
-    freeTags?: () => void;
 }
 
-export interface PDFMetadataConstructor {
-    new(metadata?: PDFMetadata): PDFMetadata;
-}
 /**
  * See SkDocument.h for more on this class.
  * This class would be available only if compiled with PDF support.
  */
-export interface Document extends EmbindObject<"SkDocument"> {
+export interface Document extends EmbindObject<"Document"> {
     /**
      * Closes the document and frees any resources associated with it.
      * This must be called before the document is destroyed.
+     * @returns the pdf data as a Uint8Array.
      * */
-    close(): void;
+    close(): Uint8Array;
     /**
      * Begins a new Page and returns the canvas associated with this document.
      * @param width
@@ -2123,37 +2117,6 @@ export interface Document extends EmbindObject<"SkDocument"> {
      * Aborts the document creation.
      */
     abort(): void;
-}
-
-/**
- * See SkStream.h for more on this class.
- * This class would be available only if compiled with PDF support.
- * WStream is a writable stream that can be used to write data to a destination.
- * It is an abstract class, and the actual implementation
- */
-export interface WStream extends EmbindObject<"WStream"> {
-    /**
-     * Returns number of bytes written to the stream so far.
-     */
-    bytesWritten(): number;
-    /**
-     * Flushes the stream, ensuring that all data is written to the destination.
-     */
-    flush(): void;
-}
-
-/**
- * See SkDynamicMemoryWStream.h for more on this class.
- * This class would be available only if compiled with PDF support.
- * DynamicMemoryStream is a writable stream that can be used to write data to a destination.
- * It is a concrete implementation of WStream that writes data to memory.
- */
-export interface DynamicMemoryStream extends WStream {
-    /**
-     * Return the contents as bytes, and then reset the stream.
-     * @returns the contents as bytes.
-     * */
-    detachAsBytes(): Uint8Array;
 }
 
 /**
@@ -3894,16 +3857,6 @@ export interface ContourMeasureIterConstructor {
      *                   precision (and possibly slow down the computation).
      */
     new (path: Path, forceClosed: boolean, resScale: number): ContourMeasureIter;
-}
-
-/**
- * See DynamicMemoryWStream.h
- */
-export interface DynamicMemoryStreamConstructor {
-    /**
-     * Creates a new DynamicMemoryStream.
-     */
-    new(): DynamicMemoryStream;
 }
 
 /**
