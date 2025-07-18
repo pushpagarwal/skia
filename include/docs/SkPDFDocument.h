@@ -47,15 +47,11 @@ public:
     void appendFloatArray(const char* owner,
                           const char* name,
                           const std::vector<float>& value);
-     void appendFloatArray(SkString owner,
-                          SkString name,
-                          const std::vector<float>& value);                         
+    void appendFloatArray(SkString owner, SkString name, const std::vector<float>& value);
     void appendNodeIdArray(const char* owner,
                            const char* attrName,
                            const std::vector<int>& nodeIds);
-    void appendNodeIdArray(SkString owner,
-                           SkString attrName,
-                           const std::vector<int>& nodeIds);
+    void appendNodeIdArray(SkString owner, SkString attrName, const std::vector<int>& nodeIds);
 
 private:
     friend class ::SkPDFStructTree;
