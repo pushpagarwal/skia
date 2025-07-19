@@ -44,7 +44,8 @@ extern Uint8Array toBytes(sk_sp<SkData> data);
 
 class CkDocument {
 public:
-    static CkDocument* MakePDFDocument(SimplePDFMetadata metadata, std::unique_ptr<SkPDF::StructureElementNode> rootTag) {
+    static CkDocument* MakePDFDocument(SimplePDFMetadata metadata,
+                                       SkPDF::StructureElementNode* rootTag) {
         SkPDF::Metadata pdfMetadata;
         pdfMetadata.jpegDecoder = SkPDF::JPEG::Decode;
         pdfMetadata.jpegEncoder = SkPDF::JPEG::Encode;
@@ -53,9 +54,13 @@ public:
         pdfMetadata.fCreation = now;
         pdfMetadata.fModified = now;
         metadata.to(pdfMetadata);
-        pdfMetadata.fStructureElementTreeRoot = rootTag.get();
+        pdfMetadata.fStructureElementTreeRoot = rootTag;
         auto stream = std::make_unique<SkDynamicMemoryWStream>();
         auto document = SkPDF::MakeDocument(stream.get(), pdfMetadata);
+        if (rootTag) {
+            // pdfMetadata does not take ownership of the rootTag, so we need to delete it here.
+            delete rootTag;
+        }
         return new CkDocument(std::move(document), std::move(stream));
     }
     SkCanvas* beginPage(SkScalar width, SkScalar height, WASMPointerF32 fPtr) {
@@ -73,13 +78,13 @@ public:
         fDoc->abort();
         fStream->flush();
     }
+
 private:
     CkDocument(sk_sp<SkDocument> doc, std::unique_ptr<SkDynamicMemoryWStream> fStream)
-        : fDoc(std::move(doc)), fStream(std::move(fStream)) {}
+            : fDoc(std::move(doc)), fStream(std::move(fStream)) {}
     sk_sp<SkDocument> fDoc;
     std::unique_ptr<SkDynamicMemoryWStream> fStream;
 };
-
 
 EMSCRIPTEN_BINDINGS(Pdf) {
     class_<CkDocument>("Document")
@@ -93,38 +98,61 @@ EMSCRIPTEN_BINDINGS(Pdf) {
     function("SetPDFTagId", optional_override([](SkCanvas& canvas, int32_t tagId) {
                  SkPDF::SetNodeId(&canvas, tagId);
              }));
-    
+
     class_<SkPDF::StructureElementNode>("_PDFTagNode")
-            .class_function("Make", optional_override([]() {
-                return std::make_unique<SkPDF::StructureElementNode>();
-            }), allow_raw_pointers())
-            .function("setNodeId", optional_override([](SkPDF::StructureElementNode& node, int32_t id) {
-                node.fNodeId = id;
-            }))
-            .function("setTypeString", optional_override([](SkPDF::StructureElementNode& node, std::string type) {
-                node.fTypeString = SkString(type);
-            }))
-            .function("setAlt", optional_override([](SkPDF::StructureElementNode& node, std::string alt) {
-                node.fAlt = SkString(alt);
-            }))
-            .function("setLang", optional_override([](SkPDF::StructureElementNode& node, std::string lang) {
-                node.fLang = SkString(lang);
-            }))
-            .function("appendChild", optional_override([](SkPDF::StructureElementNode& node, std::unique_ptr<SkPDF::StructureElementNode> child) {
-                node.fChildVector.push_back(std::move(child));
-            }))
-            .function("appendIntAttribute", optional_override([](SkPDF::StructureElementNode& node,  WASMPointerU8 ownerPtr, WASMPointerU8 namePtr, int32_t value) {
-                node.fAttributes.appendInt(reinterpret_cast<const char*>(ownerPtr),
-                                                            reinterpret_cast<const char*>(namePtr), value);
-            }))
-            .function("appendFloatAttribute", optional_override([](SkPDF::StructureElementNode& node, WASMPointerU8 ownerPtr, WASMPointerU8 namePtr, float value) {
-                node.fAttributes.appendFloat(reinterpret_cast<const char*>(ownerPtr),
-                                                            reinterpret_cast<const char*>(namePtr), value);
-            }))
-            .function("appendNameAttribute", optional_override([](SkPDF::StructureElementNode& node, WASMPointerU8 ownerPtr, WASMPointerU8 namePtr, WASMPointerU8 valuePtr) {
-                node.fAttributes.appendName(reinterpret_cast<const char*>(ownerPtr),
-                                                            reinterpret_cast<const char*>(namePtr), reinterpret_cast<const char*>(valuePtr));
-            }));
+            .class_function("Make",
+                            optional_override([]() {
+                                return std::make_unique<SkPDF::StructureElementNode>();
+                            }),
+                            allow_raw_pointers())
+            .function("setNodeId",
+                      optional_override([](SkPDF::StructureElementNode& node, int32_t id) {
+                          node.fNodeId = id;
+                      }))
+            .function("setTypeString",
+                      optional_override([](SkPDF::StructureElementNode& node, std::string type) {
+                          node.fTypeString = SkString(type);
+                      }))
+            .function("setAlt",
+                      optional_override([](SkPDF::StructureElementNode& node, std::string alt) {
+                          node.fAlt = SkString(alt);
+                      }))
+            .function("setLang",
+                      optional_override([](SkPDF::StructureElementNode& node, std::string lang) {
+                          node.fLang = SkString(lang);
+                      }))
+            .function("appendChild",
+                      optional_override([](SkPDF::StructureElementNode& node,
+                                           std::unique_ptr<SkPDF::StructureElementNode> child) {
+                          node.fChildVector.push_back(std::move(child));
+                      }))
+            .function("appendIntAttribute",
+                      optional_override([](SkPDF::StructureElementNode& node,
+                                           WASMPointerU8 ownerPtr,
+                                           WASMPointerU8 namePtr,
+                                           int32_t value) {
+                          node.fAttributes.appendInt(reinterpret_cast<const char*>(ownerPtr),
+                                                     reinterpret_cast<const char*>(namePtr),
+                                                     value);
+                      }))
+            .function("appendFloatAttribute",
+                      optional_override([](SkPDF::StructureElementNode& node,
+                                           WASMPointerU8 ownerPtr,
+                                           WASMPointerU8 namePtr,
+                                           float value) {
+                          node.fAttributes.appendFloat(reinterpret_cast<const char*>(ownerPtr),
+                                                       reinterpret_cast<const char*>(namePtr),
+                                                       value);
+                      }))
+            .function("appendNameAttribute",
+                      optional_override([](SkPDF::StructureElementNode& node,
+                                           WASMPointerU8 ownerPtr,
+                                           WASMPointerU8 namePtr,
+                                           WASMPointerU8 valuePtr) {
+                          node.fAttributes.appendName(reinterpret_cast<const char*>(ownerPtr),
+                                                      reinterpret_cast<const char*>(namePtr),
+                                                      reinterpret_cast<const char*>(valuePtr));
+                      }));
 
     value_object<SimplePDFMetadata>("PDFMetadata")
             .field("title", &SimplePDFMetadata::title)
@@ -137,7 +165,6 @@ EMSCRIPTEN_BINDINGS(Pdf) {
             .field("rasterDPI", &SimplePDFMetadata::rasterDPI)
             .field("PDFA", &SimplePDFMetadata::PDFA)
             .field("compressionLevel", &SimplePDFMetadata::compressionLevel);
-         
 
     constant("pdf", true);
     enum_<SkPDF::Metadata::CompressionLevel>("PDFCompressionLevel")
