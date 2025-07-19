@@ -1,6 +1,6 @@
 {
   "name": "@rollerbird/canvaskit-wasm-pdf",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A WASM version of Skia's Canvas API",
   "main": "bin/canvaskit-pdf.js",
   "homepage": "https://github.com/google/skia/tree/main/modules/canvaskit",
