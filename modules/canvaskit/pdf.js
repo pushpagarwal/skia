@@ -3,114 +3,48 @@ CanvasKit._extraInitializations.push(function() {
     CanvasKit.MakePDFDocument = function(metadata) {
         // Fills out all optional fields with defaults. The emscripten bindings complain if there
         // is a field undefined and it was expecting a float (for example).
-        metadata = initPDFMetadata(metadata);
-        var doc = CanvasKit._MakePDFDocument(metadata);
-        // Free the tags after the document is created.
-        // This is to free vectors and other memory that is not needed anymore.
-        freeTags(metadata.rootTag);
+        let rootTag = initPDFTag(metadata['rootTag']);
+        let pdfMetadata = initPDFMetadata(metadata);
+        let doc = CanvasKit._MakePDFDocument(pdfMetadata, rootTag);
         return doc;
     };
 
     CanvasKit.Document.prototype.beginPage = function(width, height, rect) {
-        var rPtr = copyRectToWasm(rect);
+        let rPtr = copyRectToWasm(rect);
         return this._beginPage(width, height, rPtr);
       };
 
-    function initAttribute(attr) {
-        // Fills out all optional fields with defaults. The emscripten bindings complain if
-        // there is a field undefined and it was expecting a float (for example).
-        // Use [''] to tell closure not to minify the names 
-        attr = attr || {};
-        var origType = attr['type'];
-        attr['name'] = cacheOrCopyString(attr['name'] || '');
-        attr['type'] = cacheOrCopyString(attr['type'] || '');
-        attr['owner'] = cacheOrCopyString(attr['owner'] || '');
-        if(origType === 'name') {
-            attr['nameValue'] = cacheOrCopyString(attr['nameValue'] || '');
-        } else if(origType === 'int') {
-            attr['intValue'] = attr['intValue'] || 0;
-        } else if(origType === 'float') {
-            attr['floatValue'] = attr['floatValue'] || 0.0;
-        } else if(origType === 'float-array') {
-            var floatValues = new CanvasKit.FloatVector();
-            for (var i = 0; i < attr['floatValues'].length; i++) {
-                floatValues.push_back(attr['floatValues'][i]);
-            }
-            attr['floatValues'] = floatValues;
-        } else if(origType === 'node-id-array') {
-            var nodeIdArray = new CanvasKit.IntVector();
-            for (var i = 0; i < attr['nodeIdArray'].length; i++) {
-                nodeIdArray.push_back(attr['nodeIdArray'][i]);
-            } 
-            attr['nodeIdArray'] = nodeIdArray;
+    function copyAttribute(tag, source) {
+        let owner = cacheOrCopyString(source['owner'] || '');
+        let name = cacheOrCopyString(source['name'] || '');
+        if(source['type'] === 'name') {
+            tag.appendNameAttribute(owner, name, cacheOrCopyString(source['value'] || ''));
+        } else if(source['type'] === 'int') {
+            tag.appendIntAttribute(owner, name, source['value'] || 0);
+        } else if(source['type'] === 'float') {
+            tag.appendFloatAttribute(owner, name, source['value'] || 0.0);
         } else {
-            throw new Error('PDFTagAttribute: Unknown type: ' + attr['type']);
-        }
-        attr['nameValue'] = attr['nameValue'] || '';
-        attr['floatValues'] = attr['floatValues'] || new CanvasKit.FloatVector();
-        attr['nodeIdArray'] = attr['nodeIdArray'] || new CanvasKit.IntVector();
-        attr['intValue'] = attr['intValue'] || 0;
-        attr['floatValue'] = attr['floatValue'] || 0.0;
-
-
-        return attr;
-    }
-
-    function freeAttribute(attr) {
-        // Free the floatValues array if it exists.
-        if (attr.floatValues) {
-            attr.floatValues.delete();
-        }
-        // Free the nodeIdArray if it exists.
-        if (attr.nodeIdArray) {
-            attr.nodeIdArray.delete();
+            throw new Error('PDFTagAttribute: Unknown type: ' + source['type']);
         }
     }
 
-    function initPDFTag(pdfTag) {
-      // Fills out all optional fields with defaults. The emscripten bindings complain if
-      // there is a field undefined and it was expecting a float (for example).
-      // Use [''] to tell closure not to minify the names
-      pdfTag = pdfTag || {};
-      pdfTag['id'] = pdfTag['id'] || 0;
-      pdfTag['type'] = pdfTag['type'] || 'NonStruct';
-      pdfTag['alt'] = pdfTag['alt'] || '';
-      pdfTag['lang'] = pdfTag['lang'] || '';
-      let children = new CanvasKit.PDFTagVector();
-      if (pdfTag['children'] && pdfTag['children'].length > 0) {
-          for (let i = 0; i < pdfTag['children'].length; i++) {
-              children.push_back(initPDFTag(pdfTag['children'][i]));
-          }
+    function initPDFTag(source) {
+      if (!source) {
+        return null;
       }
-      pdfTag['children'] = children;
-      let attributes = new CanvasKit.PDFTagAttributeVector();
-      if (pdfTag['attributes'] && pdfTag['attributes'].length > 0) {
-          for (let i = 0; i < pdfTag['attributes'].length; i++) {
-              attributes.push_back(initAttribute(pdfTag['attributes'][i]));
-          }
+      let pdftag = CanvasKit._PDFTagNode.Make();
+      pdftag.setNodeId(source['id'] || 0);
+      pdftag.setTypeString(source['type'] || 'NonStruct');
+      pdftag.setAlt(source['alt'] || '');
+      pdftag.setLang(source['language'] || '');
+      for (let i = 0; i < source['attributes'].length; i++) {
+          copyAttribute(pdftag, source['attributes'][i]);
       }
-      pdfTag['attributes'] = attributes;
-      return pdfTag;
-    }
+      for (let i = 0; i < source['children'].length; i++) {
+          pdftag.appendChild(initPDFTag(source['children'][i]));
+      }
 
-    function freeTags(tag) {
-        if (!tag) {
-            return;
-        }
-        // Free the children first, so that we don't have dangling pointers.
-        if (tag.children) {
-            for (let i = 0; i < tag.children.length; i++) {
-                freeTags(tag.children[i]);
-            }
-        }
-        tag.children.delete();
-        // Free the attributes.
-        if (tag.attributes) {
-            for (let i = 0; i < tag.attributes.length; i++) {
-                freeAttribute(tag.attributes[i]);
-            }
-        }
-        tag.attributes.delete();
+      return pdftag;
     }
 
     function initPDFMetadata(metadata) {
@@ -127,13 +61,12 @@ CanvasKit._extraInitializations.push(function() {
         metadata['language'] = metadata['language'] || '';
         metadata['rasterDPI'] = metadata['rasterDPI'] || 72;
         metadata['PDFA'] = !!metadata['PDFA'];
-        metadata['rootTag'] = initPDFTag(metadata['rootTag']);
         metadata['compressionLevel'] = metadata['compressionLevel'] || CanvasKit.PDFCompressionLevel.Default;
         return metadata;
     };
 
      // maps string -> malloc'd pointer
-    var stringCache = {};
+    let stringCache = {};
 
     // cacheOrCopyString copies a string from JS into WASM on the heap and returns the pointer
     // to the memory of the string. It is expected that a caller to this helper will *not* free
@@ -146,8 +79,8 @@ CanvasKit._extraInitializations.push(function() {
         return stringCache[str];
       }
       // Add 1 for null terminator, which we need when copying/converting
-      var strLen = lengthBytesUTF8(str) + 1;
-      var strPtr = CanvasKit._malloc(strLen);
+      let strLen = lengthBytesUTF8(str) + 1;
+      let strPtr = CanvasKit._malloc(strLen);
       stringToUTF8(str, strPtr, strLen);
       stringCache[str] = strPtr;
       return strPtr;
