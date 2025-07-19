@@ -58,6 +58,8 @@ var CanvasKit = {
   MakeGPUCanvasContext: function() {},
   MakeGPUCanvasSurface: function() {},
   MakeGPUTextureSurface: function() {},
+  MakePDFDocument: function() {},
+  SetPDFTagId: function() {},
   MakeRasterDirectSurface: function() {},
   MakeWebGLCanvasSurface: function() {},
   Malloc: function() {},
@@ -87,6 +89,7 @@ var CanvasKit = {
   _MakeManagedAnimation: function() {},
   _MakeOnScreenGLSurface: function() {},
   _MakePicture: function() {},
+  _MakePDFDocument: function() {},
   _MakeRenderTargetII: function() {},
   _MakeRenderTargetWH: function() {},
   _computeTonalColors: function() {},
@@ -437,6 +440,18 @@ var CanvasKit = {
     _getPosTan: function() {},
   },
 
+  Document: {
+    endPage: function() {},
+    close: function() {},
+    abort: function() {},
+    prototype:  {
+      beginPage: function() {},
+    },
+    // private API (from C++ bindings)
+    _beginPage: function() {},
+  },
+
+
   Font: {
     // public API (from C++ bindings)
     getMetrics: function() {},
@@ -733,6 +748,8 @@ var CanvasKit = {
     dumpHex: function() {},
   },
 
+  PDFMetadata : function() {},
+
   Picture: {
     serialize: function() {},
     approximateByteSize: function() {},
@@ -851,6 +868,17 @@ var CanvasKit = {
     // private API (from C++ bindings)
 
     _bounds: function() {},
+  },
+
+  _PDFTagNode: {
+    appendChild: function() {},
+    appendNameAttribute: function() {},
+    appendIntAttribute: function() {},
+    appendFloatAttribute: function() {},
+    setAlt: function() {},
+    setLang: function() {},
+    setNodeId: function() {},
+    setTypeString: function() {},
   },
 
   _VerticesBuilder: {
@@ -1035,6 +1063,14 @@ var CanvasKit = {
     Union: {},
     XOR: {},
     ReverseDifference: {},
+  },
+
+  PDFCompressionLevel: {
+    Default: {},
+    None: {},
+    LowButFast: {},
+    Average: {},
+    HighButSlow: {},
   },
 
   PointMode: {

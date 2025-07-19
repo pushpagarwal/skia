@@ -164,6 +164,11 @@ if [[ $@ == *no_paragraph* ]] || [[ $@ == *primitive_shaper* ]] || [[ $@ == *no_
   ENABLE_PARAGRAPH="false"
 fi
 
+ENABLE_PDF="true"
+if [[ $@ == *no_pdf* ]]; then
+  ENABLE_PDF="false"
+fi
+
 DO_DECODE="true"
 if [[ $@ == *no_codecs* ]]; then
   echo "Omitting codecs"
@@ -221,8 +226,8 @@ echo "Compiling"
   skia_use_fontconfig=false \
   skia_use_freetype=true \
   skia_use_libheif=false \
-  skia_use_libjpeg_turbo_decode=${DO_DECODE} \
-  skia_use_libjpeg_turbo_encode=${ENCODE_JPEG} \
+  skia_use_libjpeg_turbo_decode=${DO_DECODE} || ${ENABLE_PDF} \
+  skia_use_libjpeg_turbo_encode=${ENCODE_JPEG} || ${ENABLE_PDF} \
   skia_use_no_jpeg_encode=${NO_ENCODE_JPEG} \
   skia_use_libpng_decode=${DO_DECODE} \
   skia_use_libpng_encode=${ENCODE_PNG} \
@@ -251,7 +256,7 @@ echo "Compiling"
   \
   skia_enable_skshaper=true \
   skia_enable_skparagraph=true \
-  skia_enable_pdf=false \
+  skia_enable_pdf=${ENABLE_PDF} \
   skia_canvaskit_enable_rt_shader=true \
   skia_canvaskit_force_tracing=${FORCE_TRACING} \
   skia_canvaskit_profile_build=${PROFILE_BUILD} \
@@ -268,6 +273,7 @@ echo "Compiling"
   skia_canvaskit_enable_debugger=${DEBUGGER_ENABLED} \
   skia_canvaskit_enable_paragraph=${ENABLE_PARAGRAPH} \
   skia_canvaskit_enable_bidi=${ENABLE_BIDI} \
+  skia_canvaskit_enable_pdf=${ENABLE_PDF} \
   skia_canvaskit_enable_webgl=${ENABLE_WEBGL} \
   skia_canvaskit_enable_webgpu=${ENABLE_WEBGPU}"
 

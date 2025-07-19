@@ -459,6 +459,25 @@ export interface CanvasKit {
     MakeManagedAnimation(json: string, assets?: Record<string, ArrayBuffer>,
                          filterPrefix?: string, soundMap?: SoundMap): ManagedSkottieAnimation;
 
+    /**
+     * See SkPDFDocument.h for more details.
+     * Creates a PDF document that can be used to draw content to. The document will be
+     * created with the given metadata, which can be used to set the title, author,
+     * subject, keywords, and creator of the PDF document.
+     * returns a new PDF document.
+     * @param metadata - metadata to be used in the PDF document.
+     * This function would be available only if compiled with PDF support.
+     */
+    MakePDFDocument(metadata: PDFMetadata): Document;
+    
+    /**
+     * See SkPDFDocument.h SkPDF::SetNodeId for more details.
+     * Sets the PDF tag ID on the given canvas.
+     * @param canvas - the canvas to set the tag on.
+     * @param tagId - the tag ID to set.
+     */
+    SetPDFTagId(canvas: Canvas, tagId: number): void;
+
     // Constructors, i.e. things made with `new CanvasKit.Foo()`;
     readonly ImageData: ImageDataConstructor;
     readonly ParagraphStyle: ParagraphStyleConstructor;
@@ -555,9 +574,10 @@ export interface CanvasKit {
 
     readonly gpu?: boolean; // true if GPU code was compiled in
     readonly managed_skottie?: boolean; // true if advanced (managed) Skottie code was compiled in
+    readonly pdf?: boolean; // true if PDF support was compiled in
     readonly rt_effect?: boolean; // true if RuntimeEffect was compiled in
     readonly skottie?: boolean; // true if base Skottie code was compiled in
-
+    
     // Paragraph Enums
     readonly Affinity: AffinityEnumValues;
     readonly DecorationStyle: DecorationStyleEnumValues;
@@ -1924,6 +1944,175 @@ export interface FontMetrics {
     descent: number;    // suggested space below the baseline. > 0
     leading: number;    // suggested spacing between descent of previous line and ascent of next line.
     bounds?: Rect;      // smallest rect containing all glyphs (relative to 0,0)
+}
+
+/**
+ * Represents a single attribute within a PDF structure element.
+ * These attributes provide additional metadata about the element for accessibility
+ * and proper rendering in PDF viewers that support tagged PDFs.
+ */
+export interface PDFTagAttribute {
+    /** 
+     * The owner/namespace of this attribute, typically indicating which system or spec defines it.
+     * Common values: "Standard", "Table", "List", "Cell", "Image", "Heading"
+     * Examples: "Table" for table-specific attributes, "Image" for image dimensions
+     */
+    owner: string;
+    
+    /** 
+     * The name/key of the attribute within the owner's namespace.
+     * Examples: "RowCount", "ColSpan", "Width", "Level", "ID", "Class"
+     */
+    name: string;
+    
+    /** 
+     * The data type of the attribute value, used for proper serialization in PDF.
+     * Standard types:
+     * - "int": Integer numbers
+     * - "float": Floating-point numbers  
+     * - "name": String identifiers/names
+     */
+    type: string;
+    
+    /** 
+     * The actual value of the attribute. Type should match the 'type' field:
+     * - number for "int" and "float" types
+     * - string for "name" and "string" types
+     */
+    value: string | number;
+}
+
+/**
+ * Represents a PDF structure element (tag) in the document's logical structure tree.
+ * This corresponds to StructureElementNode in SkPDFDocument.h and enables creation
+ * of accessible, tagged PDFs that work with screen readers and assistive technology.
+ * 
+ * The structure tree defines the logical reading order and semantic meaning of content,
+ * separate from the visual presentation order on the page.
+ */
+export interface PDFTag {
+    /** 
+     * Unique identifier for this structure element within the PDF document.
+     * - Positive numbers (1, 2, 3...): Regular content elements
+     * - Zero (0): Reserved for "Nothing" - typically unused
+     * - Negative numbers (-1, -2, -3...): Predefined artifact types (decorative content)
+     * 
+     * This ID is also applied to the corresponding HTML element as a data attribute
+     * to maintain correlation between HTML DOM and PDF structure during rendering.
+     */
+    id?: number;
+    
+    /** 
+     * The PDF structure type that defines the semantic role of this element.
+     * Must be a standard PDF structure type from PDF specification (ISO 32000).
+     * 
+     * Common types:
+     * - Document structure: "Document", "Part", "Art", "Sect", "Div"
+     * - Paragraphs and headings: "P", "H1", "H2", "H3", "H4", "H5", "H6"
+     * - Lists: "L" (List), "LI" (List Item), "Lbl" (Label), "LBody" (Body)
+     * - Tables: "Table", "TR" (Row), "TH" (Header), "TD" (Data), "THead", "TBody", "TFoot"
+     * - Inline: "Span", "Link", "Code", "Quote", "Note"
+     * - Media: "Figure", "Formula", "Form"
+     * - Non-content: "Artifact"
+     */
+    type?: string;
+    
+    /** 
+     * Alternative text description for this element, crucial for accessibility.
+     * Used by screen readers when the element cannot be read directly.
+     * 
+     * Typically sourced from:
+     * - HTML 'alt' attribute (for images)
+     * - HTML 'aria-label' attribute
+     * - Manual specification for complex elements
+     * 
+     * Should be descriptive but concise, explaining the purpose or content
+     * of the element in context.
+     */
+    alt?: string;
+    
+    /** 
+     * Natural language of the text content within this element.
+     * Uses standard language codes (e.g., "en", "en-US", "fr", "es").
+     * 
+     * Helps screen readers use correct pronunciation and text-to-speech engines.
+     * Can be inherited from parent elements or specified at document level.
+     * Sourced from HTML 'lang' attribute.
+     */
+    language?: string;
+    
+    /** 
+     * Array of additional metadata attributes that provide detailed information
+     * about this structure element for enhanced accessibility and rendering.
+     * 
+     * Examples:
+     * - Table attributes: row/column counts, cell spanning
+     * - List attributes: numbering format, start values
+     * - Image attributes: dimensions, placement type
+     * - Heading attributes: outline level
+     * - General attributes: CSS classes, element IDs
+     */
+    attributes?: PDFTagAttribute[];
+    
+    /** 
+     * Child structure elements that are logically contained within this element.
+     * Forms a tree structure representing the document's logical hierarchy.
+     * 
+     * The order of children should reflect the logical reading order,
+     * which may differ from the visual presentation order.
+     * 
+     * Empty array or undefined indicates a leaf node (no children).
+     */
+    children?: PDFTag[];
+}
+
+/**
+ * See Metadata in SkPDFDocument.h for more on this class.
+ * Represents metadata for a PDF document.
+ * This is used to store information about the PDF document and document structure for tags.
+ * This value object would be available only if compiled with PDF support.
+ */
+export interface PDFMetadata {
+    title?: string;          // Title of the document.
+    author?: string;         // Author of the document.
+    subject?: string;        // Subject of the document.
+    keywords?: string;       // Keywords associated with the document.
+    creator?: string;        // Application that created the document.
+    producer?: string;       // Application that produced the document.
+    language?: string;      // Language of the document.
+    rasterDPI?: number;     // DPI for raster images in the document.
+    PDFA?: boolean;         // Whether the document is PDF/A compliant.
+    rootTag?: PDFTag;       // Root of the structure element tree or PDF tag tree.
+}
+
+/**
+ * See SkDocument.h for more on this class.
+ * This class would be available only if compiled with PDF support.
+ */
+export interface Document extends EmbindObject<"Document"> {
+    /**
+     * Closes the document and frees any resources associated with it.
+     * This must be called before the document is destroyed.
+     * @returns the pdf data as a Uint8Array.
+     * */
+    close(): Uint8Array;
+    /**
+     * Begins a new Page and returns the canvas associated with this document.
+     * @param width
+     * @param height
+     * @param contentRect - the content rectangle of the page. If provided, the page will be
+     *                     clipped to this rectangle.
+     * @returns the canvas associated with this document.
+     * */
+    beginPage(width: number, height: number, contentRect?:Rect): Canvas;
+    /**
+     * Ends the current page.
+     * */
+    endPage(): void;
+    /**
+     * Aborts the document creation.
+     */
+    abort(): void;
 }
 
 /**
