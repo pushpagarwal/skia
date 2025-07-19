@@ -1971,9 +1971,6 @@ export interface PDFTagAttribute {
      * - "int": Integer numbers
      * - "float": Floating-point numbers  
      * - "name": String identifiers/names
-     * - "string": General text content
-     * - "node-id-array": Array of PDF node references
-     * - "float-array": Array of floating-point values
      */
     type: string;
     
@@ -1981,9 +1978,8 @@ export interface PDFTagAttribute {
      * The actual value of the attribute. Type should match the 'type' field:
      * - number for "int" and "float" types
      * - string for "name" and "string" types
-     * - number[] for array types
      */
-    value: string | number | number[];
+    value: string | number;
 }
 
 /**
