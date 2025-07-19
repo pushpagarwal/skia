@@ -37,9 +37,11 @@ CanvasKit._extraInitializations.push(function() {
       pdftag.setTypeString(source['type'] || 'NonStruct');
       pdftag.setAlt(source['alt'] || '');
       pdftag.setLang(source['language'] || '');
+      source['attributes'] = source['attributes'] || [];
       for (let i = 0; i < source['attributes'].length; i++) {
           copyAttribute(pdftag, source['attributes'][i]);
       }
+      source['children'] = source['children'] || [];
       for (let i = 0; i < source['children'].length; i++) {
           pdftag.appendChild(initPDFTag(source['children'][i]));
       }

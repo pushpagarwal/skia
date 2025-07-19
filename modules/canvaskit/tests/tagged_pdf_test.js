@@ -3,7 +3,6 @@
 // This test verifies tagged PDF structure and metadata using CanvasKit's PDF API
 
 describe('Tagged PDF Structure', function() {
-    let container;
 
     beforeEach(async () => {
         await EverythingLoaded;
@@ -61,18 +60,17 @@ describe('Tagged PDF Structure', function() {
             ]
         };
 
-        const metadata = new CanvasKit.PDFMetadata({
+        const metadata = {
             title: 'Tagged PDF Test',
             author: 'CanvasKit',
             subject: 'Testing tagged PDF',
             keywords: 'PDF, tagged, test',
             language: 'en',
             rootTag: rootTag
-        });
+        };
 
         // Create a memory stream for PDF output
-        const stream = new CanvasKit.DynamicMemoryStream();
-        const doc = CanvasKit.MakePDFDocument(stream, metadata);
+        const doc = CanvasKit.MakePDFDocument(metadata);
         expect(doc).not.toBeNull();
 
         // Begin a page and draw heading, paragraph, and table
@@ -121,11 +119,8 @@ describe('Tagged PDF Structure', function() {
         }
 
         doc.endPage();
-
         // Close the document
-        doc.close();
-        stream.flush();
-        const pdfBytes = stream.detachAsBytes();
+        const pdfBytes = doc.close();
         expect(pdfBytes).toBeInstanceOf(Uint8Array);
         expect(pdfBytes.length).toBeGreaterThan(0);
 
