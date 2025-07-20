@@ -5,6 +5,11 @@ CanvasKit._extraInitializations.push(function() {
         // is a field undefined and it was expecting a float (for example).
         let pdfMetadata = initPDFMetadata(metadata);
         let doc = CanvasKit._MakePDFDocument(pdfMetadata);
+        if (pdfMetadata._rootTag) {
+            // pdfMetadata does not take ownership of the rootTag, so we need to delete it here
+            // after the document is created.
+            pdfMetadata._rootTag.delete();
+        }
         return doc;
     };
 

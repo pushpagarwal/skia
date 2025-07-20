@@ -56,7 +56,7 @@ extern Uint8Array toBytes(sk_sp<SkData> data);
 
 class CkDocument {
 public:
-    static CkDocument* MakePDFDocument(SimplePDFMetadata metadata) {
+    static CkDocument* MakePDFDocument(const SimplePDFMetadata& metadata) {
         SkPDF::Metadata pdfMetadata;
         pdfMetadata.jpegDecoder = SkPDF::JPEG::Decode;
         pdfMetadata.jpegEncoder = SkPDF::JPEG::Encode;
@@ -67,11 +67,6 @@ public:
         metadata.to(pdfMetadata);
         auto stream = std::make_unique<SkDynamicMemoryWStream>();
         auto document = SkPDF::MakeDocument(stream.get(), pdfMetadata);
-        if (pdfMetadata.fStructureElementTreeRoot) {
-            // pdfMetadata does not take ownership of the rootTag, so we need to delete it here.
-            // after the document is created.
-            delete pdfMetadata.fStructureElementTreeRoot;
-        }
         return new CkDocument(std::move(document), std::move(stream));
     }
     SkCanvas* beginPage(SkScalar width, SkScalar height, WASMPointerF32 fPtr) {
