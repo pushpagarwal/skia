@@ -3,9 +3,8 @@ CanvasKit._extraInitializations.push(function() {
     CanvasKit.MakePDFDocument = function(metadata) {
         // Fills out all optional fields with defaults. The emscripten bindings complain if there
         // is a field undefined and it was expecting a float (for example).
-        let rootTag = initPDFTag(metadata['rootTag']);
         let pdfMetadata = initPDFMetadata(metadata);
-        let doc = CanvasKit._MakePDFDocument(pdfMetadata, rootTag);
+        let doc = CanvasKit._MakePDFDocument(pdfMetadata);
         return doc;
     };
 
@@ -64,6 +63,9 @@ CanvasKit._extraInitializations.push(function() {
         metadata['rasterDPI'] = metadata['rasterDPI'] || 72;
         metadata['PDFA'] = !!metadata['PDFA'];
         metadata['compressionLevel'] = metadata['compressionLevel'] || CanvasKit.PDFCompressionLevel.Default;
+        if (metadata['rootTag']) {
+            metadata['_rootTag'] = metadata['_rootTag'] || initPDFTag(metadata['rootTag']);
+        } 
         return metadata;
     };
 

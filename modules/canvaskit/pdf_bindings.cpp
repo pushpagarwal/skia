@@ -8,9 +8,18 @@
 #include <emscripten/bind.h>
 #include "modules/canvaskit/WasmCommon.h"
 
-#include <iostream>
-
 using namespace emscripten;
+
+inline bool isInstanceOfPDFTagNode(const emscripten::val& obj) {
+    return obj.instanceof(val::module_property("_PDFTagNode"));
+}
+
+inline SkPDF::StructureElementNode* getPDFTagNode(const emscripten::val& obj) {
+    if (isInstanceOfPDFTagNode(obj)) {
+        return obj.as<SkPDF::StructureElementNode*>(allow_raw_pointers());
+    }
+    return nullptr;
+}
 
 struct SimplePDFMetadata {
     std::string title;
@@ -22,6 +31,8 @@ struct SimplePDFMetadata {
     std::string language;
     SkScalar rasterDPI = 0;
     bool PDFA = false;
+    val rootTagVal = val::null();
+
     SkPDF::Metadata::CompressionLevel compressionLevel = SkPDF::Metadata::CompressionLevel::Default;
 
     void to(SkPDF::Metadata& meta) const {
@@ -34,6 +45,7 @@ struct SimplePDFMetadata {
         meta.fLang = SkString(language);
         meta.fRasterDPI = rasterDPI;
         meta.fPDFA = PDFA;
+        meta.fStructureElementTreeRoot = getPDFTagNode(rootTagVal);
         meta.fCompressionLevel = compressionLevel;
     }
 };
@@ -44,8 +56,7 @@ extern Uint8Array toBytes(sk_sp<SkData> data);
 
 class CkDocument {
 public:
-    static CkDocument* MakePDFDocument(SimplePDFMetadata metadata,
-                                       SkPDF::StructureElementNode* rootTag) {
+    static CkDocument* MakePDFDocument(SimplePDFMetadata metadata) {
         SkPDF::Metadata pdfMetadata;
         pdfMetadata.jpegDecoder = SkPDF::JPEG::Decode;
         pdfMetadata.jpegEncoder = SkPDF::JPEG::Encode;
@@ -54,12 +65,12 @@ public:
         pdfMetadata.fCreation = now;
         pdfMetadata.fModified = now;
         metadata.to(pdfMetadata);
-        pdfMetadata.fStructureElementTreeRoot = rootTag;
         auto stream = std::make_unique<SkDynamicMemoryWStream>();
         auto document = SkPDF::MakeDocument(stream.get(), pdfMetadata);
-        if (rootTag) {
+        if (pdfMetadata.fStructureElementTreeRoot) {
             // pdfMetadata does not take ownership of the rootTag, so we need to delete it here.
-            delete rootTag;
+            // after the document is created.
+            delete pdfMetadata.fStructureElementTreeRoot;
         }
         return new CkDocument(std::move(document), std::move(stream));
     }
@@ -164,6 +175,7 @@ EMSCRIPTEN_BINDINGS(Pdf) {
             .field("language", &SimplePDFMetadata::language)
             .field("rasterDPI", &SimplePDFMetadata::rasterDPI)
             .field("PDFA", &SimplePDFMetadata::PDFA)
+            .field("_rootTag", &SimplePDFMetadata::rootTagVal)
             .field("compressionLevel", &SimplePDFMetadata::compressionLevel);
 
     constant("pdf", true);
