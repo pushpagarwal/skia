@@ -50,10 +50,6 @@ struct SimplePDFMetadata {
     }
 };
 
-// toBytes returns a Uint8Array that has a copy of the data in the given SkData.
-// defined in canvaskit_bindings.cpp
-extern Uint8Array toBytes(sk_sp<SkData> data);
-
 class CkDocument {
 public:
     static CkDocument* MakePDFDocument(const SimplePDFMetadata& metadata) {

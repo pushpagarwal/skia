@@ -134,4 +134,7 @@ private:
     bool        fOwned;
 };
 
+// toBytes returns a Uint8Array that has a copy of the data in the given SkData.
+Uint8Array toBytes(sk_sp<SkData> data);
+
 #endif
