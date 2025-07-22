@@ -2504,6 +2504,14 @@ EMSCRIPTEN_BINDINGS(Skia) {
             self.getFamilyName(&s);
             return emscripten::val(s.c_str());
         }))
+        .function("getFontStyle", optional_override([](SkTypeface& self) -> emscripten::val {
+            SkFontStyle fs = self.fontStyle();
+            emscripten::val result = emscripten::val::object();
+            result.set("weight", fs.weight());
+            result.set("width", fs.width());
+            result.set("slant", fs.slant());
+            return result;
+        }))
         .function("_getGlyphIDs", optional_override([](SkTypeface& self, WASMPointerU8 sptr,
                                                    size_t strLen, size_t expectedCodePoints,
                                                    WASMPointerU16 iPtr) -> int {

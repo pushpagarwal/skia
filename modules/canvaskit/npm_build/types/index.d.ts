@@ -3133,6 +3133,17 @@ export interface Typeface extends EmbindObject<"Typeface"> {
      * Return the typeface family name.
      */
     getFamilyName(): string;
+
+    /**
+     * Returns the typeface's font style, which includes the weight, width, and slant.
+     * The values are in the range [0, 1000] for weight, [1,9] for width, and [0, 2] for slant.
+     * The slant is 0 for upright, 1 for italic, and 2 for oblique.
+     */
+    getFontStyle(): {
+        weight: number;
+        width: number;
+        slant: number;
+    };
 }
 
 /**
