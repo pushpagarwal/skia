@@ -527,6 +527,7 @@ export interface CanvasKit {
     readonly PaintStyle: PaintStyleEnumValues;
     readonly Path1DEffect: Path1DEffectStyleEnumValues;
     readonly PathOp: PathOpEnumValues;
+    readonly PDFCompressionLevel: PDFCompressionLevelEnumValues;
     readonly PointMode: PointModeEnumValues;
     readonly ColorSpace: ColorSpaceEnumValues;
     readonly StrokeCap: StrokeCapEnumValues;
@@ -1947,145 +1948,6 @@ export interface FontMetrics {
 }
 
 /**
- * Represents a single attribute within a PDF structure element.
- * These attributes provide additional metadata about the element for accessibility
- * and proper rendering in PDF viewers that support tagged PDFs.
- */
-export interface PDFTagAttribute {
-    /** 
-     * The owner/namespace of this attribute, typically indicating which system or spec defines it.
-     * Common values: "Standard", "Table", "List", "Cell", "Image", "Heading"
-     * Examples: "Table" for table-specific attributes, "Image" for image dimensions
-     */
-    owner: string;
-    
-    /** 
-     * The name/key of the attribute within the owner's namespace.
-     * Examples: "RowCount", "ColSpan", "Width", "Level", "ID", "Class"
-     */
-    name: string;
-    
-    /** 
-     * The data type of the attribute value, used for proper serialization in PDF.
-     * Standard types:
-     * - "int": Integer numbers
-     * - "float": Floating-point numbers  
-     * - "name": String identifiers/names
-     */
-    type: string;
-    
-    /** 
-     * The actual value of the attribute. Type should match the 'type' field:
-     * - number for "int" and "float" types
-     * - string for "name" and "string" types
-     */
-    value: string | number;
-}
-
-/**
- * Represents a PDF structure element (tag) in the document's logical structure tree.
- * This corresponds to StructureElementNode in SkPDFDocument.h and enables creation
- * of accessible, tagged PDFs that work with screen readers and assistive technology.
- * 
- * The structure tree defines the logical reading order and semantic meaning of content,
- * separate from the visual presentation order on the page.
- */
-export interface PDFTag {
-    /** 
-     * Unique identifier for this structure element within the PDF document.
-     * - Positive numbers (1, 2, 3...): Regular content elements
-     * - Zero (0): Reserved for "Nothing" - typically unused
-     * - Negative numbers (-1, -2, -3...): Predefined artifact types (decorative content)
-     * 
-     * This ID is also applied to the corresponding HTML element as a data attribute
-     * to maintain correlation between HTML DOM and PDF structure during rendering.
-     */
-    id?: number;
-    
-    /** 
-     * The PDF structure type that defines the semantic role of this element.
-     * Must be a standard PDF structure type from PDF specification (ISO 32000).
-     * 
-     * Common types:
-     * - Document structure: "Document", "Part", "Art", "Sect", "Div"
-     * - Paragraphs and headings: "P", "H1", "H2", "H3", "H4", "H5", "H6"
-     * - Lists: "L" (List), "LI" (List Item), "Lbl" (Label), "LBody" (Body)
-     * - Tables: "Table", "TR" (Row), "TH" (Header), "TD" (Data), "THead", "TBody", "TFoot"
-     * - Inline: "Span", "Link", "Code", "Quote", "Note"
-     * - Media: "Figure", "Formula", "Form"
-     * - Non-content: "Artifact"
-     */
-    type?: string;
-    
-    /** 
-     * Alternative text description for this element, crucial for accessibility.
-     * Used by screen readers when the element cannot be read directly.
-     * 
-     * Typically sourced from:
-     * - HTML 'alt' attribute (for images)
-     * - HTML 'aria-label' attribute
-     * - Manual specification for complex elements
-     * 
-     * Should be descriptive but concise, explaining the purpose or content
-     * of the element in context.
-     */
-    alt?: string;
-    
-    /** 
-     * Natural language of the text content within this element.
-     * Uses standard language codes (e.g., "en", "en-US", "fr", "es").
-     * 
-     * Helps screen readers use correct pronunciation and text-to-speech engines.
-     * Can be inherited from parent elements or specified at document level.
-     * Sourced from HTML 'lang' attribute.
-     */
-    language?: string;
-    
-    /** 
-     * Array of additional metadata attributes that provide detailed information
-     * about this structure element for enhanced accessibility and rendering.
-     * 
-     * Examples:
-     * - Table attributes: row/column counts, cell spanning
-     * - List attributes: numbering format, start values
-     * - Image attributes: dimensions, placement type
-     * - Heading attributes: outline level
-     * - General attributes: CSS classes, element IDs
-     */
-    attributes?: PDFTagAttribute[];
-    
-    /** 
-     * Child structure elements that are logically contained within this element.
-     * Forms a tree structure representing the document's logical hierarchy.
-     * 
-     * The order of children should reflect the logical reading order,
-     * which may differ from the visual presentation order.
-     * 
-     * Empty array or undefined indicates a leaf node (no children).
-     */
-    children?: PDFTag[];
-}
-
-/**
- * See Metadata in SkPDFDocument.h for more on this class.
- * Represents metadata for a PDF document.
- * This is used to store information about the PDF document and document structure for tags.
- * This value object would be available only if compiled with PDF support.
- */
-export interface PDFMetadata {
-    title?: string;          // Title of the document.
-    author?: string;         // Author of the document.
-    subject?: string;        // Subject of the document.
-    keywords?: string;       // Keywords associated with the document.
-    creator?: string;        // Application that created the document.
-    producer?: string;       // Application that produced the document.
-    language?: string;      // Language of the document.
-    rasterDPI?: number;     // DPI for raster images in the document.
-    PDFA?: boolean;         // Whether the document is PDF/A compliant.
-    rootTag?: PDFTag;       // Root of the structure element tree or PDF tag tree.
-}
-
-/**
  * See SkDocument.h for more on this class.
  * This class would be available only if compiled with PDF support.
  */
@@ -3053,6 +2915,146 @@ export interface Path extends EmbindObject<"Path"> {
  * See SkPathEffect.h for more on this class. The objects are opaque.
  */
 export type PathEffect = EmbindObject<"PathEffect">;
+
+/**
+ * See Metadata in SkPDFDocument.h for more on this class.
+ * Represents metadata for a PDF document.
+ * This is used to store information about the PDF document and document structure for tags.
+ * This value object would be available only if compiled with PDF support.
+ */
+export interface PDFMetadata {
+    title?: string;          // Title of the document.
+    author?: string;         // Author of the document.
+    subject?: string;        // Subject of the document.
+    keywords?: string;       // Keywords associated with the document.
+    creator?: string;        // Application that created the document.
+    producer?: string;       // Application that produced the document.
+    language?: string;      // Language of the document.
+    rasterDPI?: number;     // DPI for raster images in the document.
+    PDFA?: boolean;         // Whether the document is PDF/A compliant.
+    rootTag?: PDFTag;       // Root of the structure element tree or PDF tag tree.
+    compressionLevel?: PDFCompressionLevel; // Compression level for the document.
+}
+
+/**
+ * Represents a PDF structure element (tag) in the document's logical structure tree.
+ * This corresponds to StructureElementNode in SkPDFDocument.h and enables creation
+ * of accessible, tagged PDFs that work with screen readers and assistive technology.
+ * 
+ * The structure tree defines the logical reading order and semantic meaning of content,
+ * separate from the visual presentation order on the page.
+ */
+export interface PDFTag {
+    /** 
+     * Unique identifier for this structure element within the PDF document.
+     * - Positive numbers (1, 2, 3...): Regular content elements
+     * - Zero (0): Reserved for "Nothing" - typically unused
+     * - Negative numbers (-1, -2, -3...): Predefined artifact types (decorative content)
+     * 
+     * This ID is also applied to the corresponding HTML element as a data attribute
+     * to maintain correlation between HTML DOM and PDF structure during rendering.
+     */
+    id?: number;
+    
+    /** 
+     * The PDF structure type that defines the semantic role of this element.
+     * Must be a standard PDF structure type from PDF specification (ISO 32000).
+     * 
+     * Common types:
+     * - Document structure: "Document", "Part", "Art", "Sect", "Div"
+     * - Paragraphs and headings: "P", "H1", "H2", "H3", "H4", "H5", "H6"
+     * - Lists: "L" (List), "LI" (List Item), "Lbl" (Label), "LBody" (Body)
+     * - Tables: "Table", "TR" (Row), "TH" (Header), "TD" (Data), "THead", "TBody", "TFoot"
+     * - Inline: "Span", "Link", "Code", "Quote", "Note"
+     * - Media: "Figure", "Formula", "Form"
+     * - Non-content: "Artifact"
+     */
+    type?: string;
+    
+    /** 
+     * Alternative text description for this element, crucial for accessibility.
+     * Used by screen readers when the element cannot be read directly.
+     * 
+     * Typically sourced from:
+     * - HTML 'alt' attribute (for images)
+     * - HTML 'aria-label' attribute
+     * - Manual specification for complex elements
+     * 
+     * Should be descriptive but concise, explaining the purpose or content
+     * of the element in context.
+     */
+    alt?: string;
+    
+    /** 
+     * Natural language of the text content within this element.
+     * Uses standard language codes (e.g., "en", "en-US", "fr", "es").
+     * 
+     * Helps screen readers use correct pronunciation and text-to-speech engines.
+     * Can be inherited from parent elements or specified at document level.
+     * Sourced from HTML 'lang' attribute.
+     */
+    language?: string;
+    
+    /** 
+     * Array of additional metadata attributes that provide detailed information
+     * about this structure element for enhanced accessibility and rendering.
+     * 
+     * Examples:
+     * - Table attributes: row/column counts, cell spanning
+     * - List attributes: numbering format, start values
+     * - Image attributes: dimensions, placement type
+     * - Heading attributes: outline level
+     * - General attributes: CSS classes, element IDs
+     */
+    attributes?: PDFTagAttribute[];
+    
+    /** 
+     * Child structure elements that are logically contained within this element.
+     * Forms a tree structure representing the document's logical hierarchy.
+     * 
+     * The order of children should reflect the logical reading order,
+     * which may differ from the visual presentation order.
+     * 
+     * Empty array or undefined indicates a leaf node (no children).
+     */
+    children?: PDFTag[];
+}
+
+/**
+ * Represents a single attribute within a PDF structure element.
+ * These attributes provide additional metadata about the element for accessibility
+ * and proper rendering in PDF viewers that support tagged PDFs.
+ */
+export interface PDFTagAttribute {
+    /** 
+     * The owner/namespace of this attribute, typically indicating which system or spec defines it.
+     * Common values: "Standard", "Table", "List", "Cell", "Image", "Heading"
+     * Examples: "Table" for table-specific attributes, "Image" for image dimensions
+     */
+    owner: string;
+    
+    /** 
+     * The name/key of the attribute within the owner's namespace.
+     * Examples: "RowCount", "ColSpan", "Width", "Level", "ID", "Class"
+     */
+    name: string;
+    
+    /** 
+     * The data type of the attribute value, used for proper serialization in PDF.
+     * Standard types:
+     * - "int": Integer numbers
+     * - "float": Floating-point numbers  
+     * - "name": String identifiers/names
+     */
+    type: string;
+    
+    /** 
+     * The actual value of the attribute. Type should match the 'type' field:
+     * - number for "int" and "float" types
+     * - string for "name" and "string" types
+     */
+    value: string | number;
+}
 
 /**
  * See SkPicture.h for more information on this class.
@@ -4743,6 +4745,7 @@ export type MipmapMode = EmbindEnumEntity;
 export type PaintStyle = EmbindEnumEntity;
 export type Path1DEffectStyle = EmbindEnumEntity;
 export type PathOp = EmbindEnumEntity;
+export type PDFCompressionLevel = EmbindEnumEntity;
 export type PointMode = EmbindEnumEntity;
 export type StrokeCap = EmbindEnumEntity;
 export type StrokeJoin = EmbindEnumEntity;
@@ -4963,6 +4966,13 @@ export interface PathOpEnumValues extends EmbindEnum {
     ReverseDifference: PathOp;
 }
 
+export interface PDFCompressionLevelEnumValues extends EmbindEnum {
+    Default: PDFCompressionLevel;
+    None: PDFCompressionLevel;
+    LowButFast: PDFCompressionLevel;
+    Average: PDFCompressionLevel;
+    HighButSlow: PDFCompressionLevel;
+}
 export interface PlaceholderAlignmentEnumValues extends EmbindEnum {
     Baseline: PlaceholderAlignment;
     AboveBaseline: PlaceholderAlignment;
